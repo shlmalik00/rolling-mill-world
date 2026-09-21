@@ -92,33 +92,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const user = sessionData.session.user;
-
-    const { data: company, error: companyError } = await sb
-      .from('companies')
-      .select('id, company_name')
-      .eq('owner_id', user.id)
-      .limit(1)
-      .maybeSingle();
-
-    if (companyError) {
-      throw companyError;
-    }
-
-    if (!company) {
-
-      if (msg) {
-        msg.textContent =
-          'Please create your supplier profile before submitting quotations.';
-      }
-
-      if (list) {
-        list.innerHTML = '';
-      }
-
-      return;
-    }
-
     const { data: rfqs, error } = await sb
       .from('rfqs')
       .select(
@@ -268,9 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               Submit quotation
             </button>
 
-            <p
-              id="quotationMsg-${rfq.id}"
-            ></p>
+            <p id="quotationMsg-${rfq.id}"></p>
 
           </form>
 
@@ -286,10 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 } catch (err) {
 
 ```
-console.error(
-  'Supplier RFQ loading failed:',
-  err
-);
+console.error('Supplier RFQ loading failed:', err);
 
 if (msg) {
   msg.textContent =
@@ -354,10 +322,7 @@ if (sessionError) {
   throw sessionError;
 }
 
-if (
-  !sessionData.session ||
-  !sessionData.session.user
-) {
+if (!sessionData.session || !sessionData.session.user) {
   throw new Error(
     'Please sign in before submitting a quotation.'
   );
@@ -442,15 +407,11 @@ if (button) {
 } catch (err) {
 
 ```
-console.error(
-  'Quotation submission failed:',
-  err
-);
+console.error('Quotation submission failed:', err);
 
 if (msg) {
   msg.textContent =
-    err.message ||
-    'Could not submit quotation.';
+    err.message || 'Could not submit quotation.';
 }
 
 if (button) {
