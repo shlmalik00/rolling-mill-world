@@ -92,38 +92,38 @@ async function loadMyRfqs() {
 
     if (msg) msg.textContent = '';
 
-   ```js
-list.innerHTML = data.map(rfq => `
-  <article style="border:1px solid #ddd;border-radius:12px;padding:20px;margin:16px 0">
-    <small>RFQ REFERENCE</small>
-    <h2>${escapeHtml(rfq.title || 'Rolling Mill RFQ')}</h2>
+  
+So the section should end like this:
 
-    <p>${escapeHtml(rfq.description || '')}</p>
+    list.innerHTML = data.map(rfq => `
+      <article style="border:1px solid #ddd;border-radius:12px;padding:20px;margin:16px 0">
+        <small>RFQ REFERENCE</small>
+        <h2>${escapeHtml(rfq.title || 'Rolling Mill RFQ')}</h2>
 
-    <p>
-      <b>Category:</b> ${escapeHtml(rfq.category?.name || 'Not specified')}
-    </p>
+        <p>${escapeHtml(rfq.description || '')}</p>
 
-    <p>
-      <b>Status:</b> ${escapeHtml(rfq.status || '')}
-      ${rfq.delivery_country
-        ? ` · <b>Country:</b> ${escapeHtml(rfq.delivery_country)}`
-        : ''}
-    </p>
+        <p>
+          <b>Category:</b> ${escapeHtml(rfq.category?.name || 'Not specified')}
+        </p>
 
-    <small>
-      Submitted: ${new Date(rfq.created_at).toLocaleDateString()}
-    </small>
+        <p>
+          <b>Status:</b> ${escapeHtml(rfq.status || '')}
+          ${rfq.delivery_country
+            ? ` · <b>Country:</b> ${escapeHtml(rfq.delivery_country)}`
+            : ''}
+        </p>
 
-    <br><br>
+        <small>
+          Submitted: ${new Date(rfq.created_at).toLocaleDateString()}
+        </small>
 
-    <small>
-      Reference: ${escapeHtml(rfq.id)}
-    </small>
-  </article>
-`).join('');
-```
+        <br><br>
 
+        <small>
+          Reference: ${escapeHtml(rfq.id)}
+        </small>
+      </article>
+    `).join('');
 
   } catch (err) {
     console.error('Could not load RFQs:', err);
