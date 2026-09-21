@@ -38,8 +38,6 @@ async function submitRfq(e) {
 
     const { sb, user } = await getRfQClientAndUser();
 
-    const categoryId = await findCategoryId(sb, categoryLabel);
-
     const payload = {
       buyer_id: user.id,
       title: 'Rolling Mill RFQ — ' + company,
@@ -47,7 +45,6 @@ async function submitRfq(e) {
       status: 'open'
     };
 
-    if (categoryId) payload.category_id = categoryId;
     if (country) payload.delivery_country = country;
     if (consent) payload.technical_requirements = details;
 
