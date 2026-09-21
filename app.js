@@ -1,3 +1,23 @@
+async function getRfQClientAndUser() {
+  if (typeof getSupabaseClient !== 'function') {
+    throw new Error('Authentication system is not available.');
+  }
+
+  const sb = await getSupabaseClient();
+
+  const { data, error } = await sb.auth.getSession();
+
+  if (error) throw error;
+
+  if (!data.session || !data.session.user) {
+    throw new Error('Please sign in before submitting an RFQ.');
+  }
+
+  return {
+    sb,
+    user: data.session.user
+  };
+}
 async function submitRfq(e) {
   e.preventDefault();
 
