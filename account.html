@@ -247,18 +247,30 @@ async function loadQuotations(
 
   try {
 
-    const {
-      data: quotations,
-      error
-    } = await sb
-      .from('quotations')
-      .select(
-        'id, price, currency, delivery_time, payment_terms, warranty, notes, status, created_at'
-      )
-      .eq('rfq_id', rfqId)
-      .order('created_at', {
-        ascending: false
-      });
+   const {
+  data: quotations,
+  error
+} = await sb
+  .from('quotations')
+  .select(`
+    id,
+    price,
+    currency,
+    delivery_time,
+    payment_terms,
+    warranty,
+    notes,
+    status,
+    created_at,
+    supplier_company_id,
+    companies (
+      company_name
+    )
+  `)
+  .eq('rfq_id', rfqId)
+  .order('created_at', {
+    ascending: false
+  });
 
     if (error) {
       throw error;
@@ -317,7 +329,16 @@ async function loadQuotations(
                   margin-top:14px;
                 "
               >
+<p>
+  <strong>
+    Supplier:
+  </strong>
 
+  ${escapeHtml(
+    quotation.companies?.company_name ||
+    'Supplier'
+  )}
+</p>
                 <p>
                   <strong>
                     Price:
