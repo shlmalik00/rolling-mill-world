@@ -42,7 +42,7 @@
   <div id="supplierMsg"></div>
 
   <div id="rfqList">
-    <p>Loading RFQs…</p>
+    <p>Starting dashboard…</p>
   </div>
 
 </main>
@@ -60,22 +60,24 @@
 <script src="auth.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async function () {
 
   const msg = document.getElementById('supplierMsg');
   const list = document.getElementById('rfqList');
 
   try {
 
-    if (list) {
-      list.innerHTML = '<p>Connecting to Supabase…</p>';
+    list.innerHTML = '<p>Connecting to Supabase…</p>';
+
+    if (typeof getSupabaseClient !== 'function') {
+      throw new Error(
+        'Authentication system is not available.'
+      );
     }
 
     const sb = await getSupabaseClient();
 
-    if (list) {
-      list.innerHTML = '<p>Checking your sign-in…</p>';
-    }
+    list.innerHTML = '<p>Checking your sign-in…</p>';
 
     const {
       data: sessionData,
@@ -91,223 +93,215 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!sessionData.session || !sessionData.session.user) {
 
       if (msg) {
-        msg.textContent = 'You are not signed in.';
+        msg.textContent =
+          'You are not signed in.';
       }
 
-      if (list) {
-        list.innerHTML =
-          '<p>Please sign in first, then refresh this page.</p>';
-      }
+      list.innerHTML =
+        '<p>Please sign in first, then refresh this page.</p>';
 
       return;
     }
 
-    if (list) {
-      list.innerHTML =
-        '<p>Loading open RFQs from Supabase…</p>';
-    }
+    list.innerHTML =
+      '<p>Loading open RFQs from Supabase…</p>';
 
-    const { data: rfqs, error: rfqError } = await sb
+    const {
+      data: rfqs,
+      error: rfqError
+    } = await sb
       .from('rfqs')
       .select(
         'id, title, description, status, delivery_country, created_at'
       )
       .eq('status', 'open')
-      .order('created_at', { ascending: false });
+      .order('created_at', {
+        ascending: false
+      });
 
     if (rfqError) {
       throw new Error(
-        'RFQ database error: ' + rfqError.message
+        'RFQ database error: ' +
+        rfqError.message
       );
     }
 
-    if (!rfqs) {
-      throw new Error(
-        'Supabase returned no RFQ data.'
-      );
-    }
+    if (!rfqs || rfqs.length === 0) {
 
-    if (rfqs.length === 0) {
-
-      if (list) {
-        list.innerHTML =
-          '<p>Supabase connected successfully, but there are no open RFQs.</p>';
-      }
+      list.innerHTML =
+        '<p>No open buyer RFQs found.</p>';
 
       return;
     }
 
-    if (list) {
+    list.innerHTML = rfqs.map(function (rfq) {
 
-      list.innerHTML = rfqs.map(rfq => {
+      const date = new Date(
+        rfq.created_at
+      ).toLocaleDateString();
 
-        const date = new Date(
-          rfq.created_at
-        ).toLocaleDateString();
+      return `
+        <article
+          class="card"
+          style="margin-top:20px; padding:24px;"
+        >
 
-        return `
-          <article
-            class="card"
-            style="margin-top:20px; padding:24px;"
+          <small>RFQ REFERENCE</small>
+
+          <h2>
+            ${escapeHtml(
+              rfq.title || 'Buyer RFQ'
+            )}
+          </h2>
+
+          <p>
+            ${escapeHtml(
+              rfq.description ||
+              'No description provided.'
+            )}
+          </p>
+
+          ${
+            rfq.delivery_country
+              ? `
+                <p>
+                  <strong>Delivery country:</strong>
+                  ${escapeHtml(
+                    rfq.delivery_country
+                  )}
+                </p>
+              `
+              : ''
+          }
+
+          <p>
+            <strong>Status:</strong>
+            ${escapeHtml(
+              rfq.status
+            )}
+          </p>
+
+          <p>
+            <strong>Submitted:</strong>
+            ${date}
+          </p>
+
+          <p>
+            <small>
+              Reference:
+              ${escapeHtml(rfq.id)}
+            </small>
+          </p>
+
+          <button
+            class="btn blue"
+            type="button"
+            onclick="toggleQuotationForm('${rfq.id}')"
+          >
+            View RFQ / Submit quotation
+          </button>
+
+          <div
+            id="quotationForm-${rfq.id}"
+            style="display:none; margin-top:24px;"
           >
 
-            <small>RFQ REFERENCE</small>
+            <hr>
 
-            <h2>
-              ${escapeHtml(
-                rfq.title || 'Buyer RFQ'
-              )}
-            </h2>
+            <h3>Submit your quotation</h3>
 
-            <p>
-              ${escapeHtml(
-                rfq.description ||
-                'No description provided.'
-              )}
-            </p>
-
-            ${
-              rfq.delivery_country
-                ? `
-                  <p>
-                    <strong>Delivery country:</strong>
-                    ${escapeHtml(
-                      rfq.delivery_country
-                    )}
-                  </p>
-                `
-                : ''
-            }
-
-            <p>
-              <strong>Status:</strong>
-              ${escapeHtml(
-                rfq.status
-              )}
-            </p>
-
-            <p>
-              <strong>Submitted:</strong>
-              ${date}
-            </p>
-
-            <p>
-              <small>
-                Reference:
-                ${escapeHtml(rfq.id)}
-              </small>
-            </p>
-
-            <button
-              class="btn blue"
-              type="button"
-              onclick="toggleQuotationForm('${rfq.id}')"
-            >
-              View RFQ / Submit quotation
-            </button>
-
-            <div
-              id="quotationForm-${rfq.id}"
-              style="display:none; margin-top:24px;"
+            <form
+              onsubmit="submitQuotation(event, '${rfq.id}')"
             >
 
-              <hr>
-
-              <h3>Submit your quotation</h3>
-
-              <form
-                onsubmit="submitQuotation(event, '${rfq.id}')"
+              <input
+                id="price-${rfq.id}"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                placeholder="Price"
               >
 
-                <input
-                  id="price-${rfq.id}"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  placeholder="Price"
-                >
+              <select
+                id="currency-${rfq.id}"
+                required
+              >
 
-                <select
-                  id="currency-${rfq.id}"
-                  required
-                >
+                <option value="">
+                  Select currency
+                </option>
 
-                  <option value="">
-                    Select currency
-                  </option>
+                <option value="USD">
+                  USD
+                </option>
 
-                  <option value="USD">
-                    USD
-                  </option>
+                <option value="EUR">
+                  EUR
+                </option>
 
-                  <option value="EUR">
-                    EUR
-                  </option>
+                <option value="INR">
+                  INR
+                </option>
 
-                  <option value="INR">
-                    INR
-                  </option>
+                <option value="GBP">
+                  GBP
+                </option>
 
-                  <option value="GBP">
-                    GBP
-                  </option>
+                <option value="AED">
+                  AED
+                </option>
 
-                  <option value="AED">
-                    AED
-                  </option>
+                <option value="CNY">
+                  CNY
+                </option>
 
-                  <option value="CNY">
-                    CNY
-                  </option>
+              </select>
 
-                </select>
+              <input
+                id="delivery-${rfq.id}"
+                required
+                placeholder="Delivery time (e.g. 12 weeks)"
+              >
 
-                <input
-                  id="delivery-${rfq.id}"
-                  required
-                  placeholder="Delivery time (e.g. 12 weeks)"
-                >
+              <input
+                id="payment-${rfq.id}"
+                required
+                placeholder="Payment terms"
+              >
 
-                <input
-                  id="payment-${rfq.id}"
-                  required
-                  placeholder="Payment terms"
-                >
+              <input
+                id="warranty-${rfq.id}"
+                placeholder="Warranty"
+              >
 
-                <input
-                  id="warranty-${rfq.id}"
-                  placeholder="Warranty"
-                >
-
-                <textarea
-                  id="notes-${rfq.id}"
-                  rows="5"
-                  placeholder="Additional notes / quotation details"
-                ></textarea>
+              <textarea
+                id="notes-${rfq.id}"
+                rows="5"
+                placeholder="Additional notes / quotation details"
+              ></textarea>
 
 
-            <button
-              class="btn blue"
-              type="submit"
-              id="submitQuotation-${rfq.id}"
-            >
-              Submit quotation
-            </button>
+          <button
+            class="btn blue"
+            type="submit"
+            id="submitQuotation-${rfq.id}"
+          >
+            Submit quotation
+          </button>
 
-            <p
-              id="quotationMsg-${rfq.id}"
-            ></p>
+          <p
+            id="quotationMsg-${rfq.id}"
+          ></p>
 
-          </form>
+        </form>
 
-        </div>
+      </div>
 
-      </article>
-    `;
+    </article>
+  `;
 
-  }).join('');
-}
+}).join('');
 
 
 } catch (err) {
@@ -336,7 +330,8 @@ if (list) {
 
 function toggleQuotationForm(rfqId) {
 
-const form = document.getElementById(
+const form =
+document.getElementById(
 'quotationForm-' + rfqId
 );
 
@@ -344,10 +339,11 @@ if (!form) {
 return;
 }
 
-form.style.display =
-form.style.display === 'none'
-? 'block'
-: 'none';
+if (form.style.display === 'none') {
+form.style.display = 'block';
+} else {
+form.style.display = 'none';
+}
 }
 
 async function submitQuotation(
@@ -506,18 +502,18 @@ if (button) {
 
 
 }
-
 }
 
-<script>
 function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-</script>
 
+return String(value)
+.replace(/&/g, '&')
+.replace(/</g, '<')
+.replace(/>/g, '>')
+.replace(/"/g, '"')
+.replace(/'/g, ''');
 
+} </script>
+
+</body>
+</html>
