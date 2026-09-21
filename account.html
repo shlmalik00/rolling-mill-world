@@ -76,11 +76,12 @@ async function loadMyRfqs() {
 
     const user = sessionData.session.user;
 
-   const { data, error } = await sb
-  .from('rfqs')
-  .select('id, title, description, status, category_id, delivery_country, created_at')
-  .eq('buyer_id', user.id)
-  .order('created_at', { ascending: false });
+    const { data, error } = await sb
+      .from('rfqs')
+      .select('id, title, description, status, category_id, delivery_country, created_at')
+      .eq('buyer_id', user.id)
+      .order('created_at', { ascending: false });
+
     if (error) throw error;
 
     if (!data || data.length === 0) {
@@ -92,19 +93,13 @@ async function loadMyRfqs() {
 
     if (msg) msg.textContent = '';
 
-  
-So the section should end like this:
-
     list.innerHTML = data.map(rfq => `
       <article style="border:1px solid #ddd;border-radius:12px;padding:20px;margin:16px 0">
         <small>RFQ REFERENCE</small>
+
         <h2>${escapeHtml(rfq.title || 'Rolling Mill RFQ')}</h2>
 
         <p>${escapeHtml(rfq.description || '')}</p>
-
-        <p>
-          <b>Category:</b> ${escapeHtml(rfq.category?.name || 'Not specified')}
-        </p>
 
         <p>
           <b>Status:</b> ${escapeHtml(rfq.status || '')}
