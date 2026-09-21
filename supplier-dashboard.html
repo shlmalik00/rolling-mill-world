@@ -66,7 +66,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
 
+    if (list) {
+      list.innerHTML = '<p>Connecting to Supabase…</p>';
+    }
+
     const sb = await getSupabaseClient();
+
+    if (list) {
+      list.innerHTML = '<p>Checking your sign-in…</p>';
+    }
 
     const {
       data: sessionData,
@@ -74,41 +82,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     } = await sb.auth.getSession();
 
     if (sessionError) {
-      throw sessionError;
+      throw new Error(
+        'Session error: ' + sessionError.message
+      );
     }
 
     if (!sessionData.session || !sessionData.session.user) {
 
       if (msg) {
         msg.textContent =
-          'Please sign in before viewing buyer RFQs.';
+          'You are not signed in.';
       }
 
       if (list) {
         list.innerHTML =
-          '<p><a href="index.html">Return to Rolling Mill World</a> and sign in.</p>';
+          '<p>Please sign in first, then refresh this page.</p>';
       }
 
       return;
     }
 
-    const { data: rfqs, error } = await sb
+    if (list) {
+      list.innerHTML = '<p>Loading open RFQs from Supabase…</p>';
+    }
+
+    const { data: rfqs, error: rfqError } = await sb
       .from('rfqs')
       .select(
-        'id, title, description, status, category_id, delivery_country, created_at'
+        'id, title, description, status, delivery_country, created_at'
       )
       .eq('status', 'open')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
+    if (rfqError) {
+      throw new Error(
+        'RFQ database error: ' + rfqError.message
+      );
     }
 
-    if (!rfqs || rfqs.length === 0) {
+    if (!rfqs) {
+      throw new Error(
+        'Supabase returned no RFQ data.'
+      );
+    }
+
+    if (rfqs.length === 0) {
 
       if (list) {
         list.innerHTML =
-          '<p>No open buyer RFQs are available right now.</p>';
+          '<p>Supabase connected successfully, but there are no open RFQs.</p>';
       }
 
       return;
@@ -120,15 +142,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const date = new Date(rfq.created_at)
           .toLocaleDateString();
-
-        const country = rfq.delivery_country
-          ? `
-            <p>
-              <strong>Delivery country:</strong>
-              ${escapeHtml(rfq.delivery_country)}
-            </p>
-          `
-          : '';
 
         return `
           <article
@@ -148,7 +161,16 @@ document.addEventListener('DOMContentLoaded', async () => {
               )}
             </p>
 
-            ${country}
+            ${
+              rfq.delivery_country
+                ? `
+                  <p>
+                    <strong>Delivery country:</strong>
+                    ${escapeHtml(rfq.delivery_country)}
+                  </p>
+                `
+                : ''
+            }
 
             <p>
               <strong>Status:</strong>
@@ -257,15 +279,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 } catch (err) {
 
 ```
-console.error('Supplier RFQ loading failed:', err);
+console.error(
+  'Supplier dashboard error:',
+  err
+);
 
 if (msg) {
   msg.textContent =
-    err.message || 'Could not load buyer RFQs.';
+    err.message || 'Unknown error.';
 }
 
 if (list) {
-  list.innerHTML = '';
+  list.innerHTML =
+    '<p>The dashboard could not load the RFQs.</p>';
 }
 ```
 
@@ -281,11 +307,10 @@ const form = document.getElementById(
 
 if (!form) return;
 
-if (form.style.display === 'none') {
-form.style.display = 'block';
-} else {
-form.style.display = 'none';
-}
+form.style.display =
+form.style.display === 'none'
+? 'block'
+: 'none';
 }
 
 async function submitQuotation(event, rfqId) {
@@ -407,11 +432,15 @@ if (button) {
 } catch (err) {
 
 ```
-console.error('Quotation submission failed:', err);
+console.error(
+  'Quotation submission failed:',
+  err
+);
 
 if (msg) {
   msg.textContent =
-    err.message || 'Could not submit quotation.';
+    err.message ||
+    'Could not submit quotation.';
 }
 
 if (button) {
@@ -432,7 +461,4 @@ return String(value)
 .replace(/'/g, ''');
 
 } </script>
-
-</body>
-</html>
 
