@@ -80,49 +80,53 @@ async function handleAuthSubmit(e) {
   showAuthMessage('Please wait…');
   try {
     const sb = await getSupabaseClient();
-    if (mode === 'signup') {
-      const { data, error } = await sb.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name } }
-      });
-      if (error) throw error;
-      if (data.session) {
-        showAuthMessage('Account created successfully.', true);
-        closeAuth();
-      } else {
-        showAuthMessage('Account created. Please check your email to confirm your account.', true);
-      }
-    } else {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      closeAuth();
+if (mode === 'signup') {
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: name } }
+  });
+
+  if (error) throw error;
+
+  if (data.session) {
+    showAuthMessage('Account created successfully.', true);
+    closeAuth();
+  } else {
+    showAuthMessage(
+      'Account created. Please check your email to confirm your account.',
+      true
+    );
+  }
+} else {
+  const { data, error } = await sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) throw error;
+
+  closeAuth();
+
+  if (data && data.session) {
+    const accountBtn = document.getElementById('accountBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const loginBtn = document.getElementById('loginBtn');
+
+    if (loginBtn) loginBtn.style.display = 'none';
+
+    if (accountBtn) {
+      accountBtn.style.display = 'inline-flex';
+      accountBtn.textContent = 'My account';
     }
-    await refreshAuthUI();
-  } catch (err) {
-    showAuthMessage(err.message || 'Authentication failed.');
-  } finally {
-    button.disabled = false;
+
+    if (logoutBtn) {
+      logoutBtn.style.display = 'inline-flex';
+    }
   }
 }
 
-async function logout() {
-  try {
-    const sb = await getSupabaseClient();
-    const { error } = await sb.auth.signOut();
-    if (error) throw error;
-    await refreshAuthUI();
-  } catch (err) {
-    alert(err.message || 'Could not sign out.');
-  }
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  const form = document.getElementById('authForm');
-  if (form) form.addEventListener('submit', handleAuthSubmit);
-  const modal = document.getElementById('authModal');
-  if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeAuth(); });
-  await refreshAuthUI();
+await refreshAuthUI();
   try {
     const sb = await getSupabaseClient();
     sb.auth.onAuthStateChange(() => refreshAuthUI());
