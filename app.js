@@ -43,8 +43,7 @@ async function submitRfq(e) {
 
     if (msg) {
       msg.className = 'ok';
-      msg.textContent =
-        'RFQ submitted successfully. Reference: ' + data.id;
+      msg.textContent = 'RFQ submitted successfully. Reference: ' + data.id;
     }
   } catch (err) {
     console.error('RFQ submission failed', err);
@@ -57,3 +56,11 @@ async function submitRfq(e) {
     if (button) button.disabled = false;
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const f = document.getElementById('rfqForm');
+
+  if (f) {
+    f.addEventListener('submit', submitRfq);
+  }
+});
