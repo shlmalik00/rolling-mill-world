@@ -33,6 +33,15 @@ async function submitRfq(e) {
     const email = document.getElementById('rfqEmail').value.trim();
     const country = document.getElementById('rfqCountry').value.trim();
     const categoryLabel = document.getElementById('rfqCategory').value;
+    const categoryMap = {
+  'Complete rolling mill': '00dcae93-6a04-4ec2-9f18-0f6680b175a2',
+  'Spare parts': '297c4c57-c260-464a-93d8-7a965c47e1d3',
+  'Machinery': 'c229a626-7474-457c-8c00-e1533d5a1fcc',
+  'Used machinery': 'e0a278b3-42c8-43d1-8edd-50c80ec3ce06',
+  'Service / maintenance': '7e84ad76-f1d6-4ced-8b17-b2e2cf211e90'
+};
+
+const categoryId = categoryMap[categoryLabel];
     const details = document.getElementById('rfqDetails').value.trim();
     const consent = document.getElementById('rfqConsent').checked;
 
@@ -45,6 +54,7 @@ async function submitRfq(e) {
       status: 'open'
     };
 
+    if (categoryId) payload.category_id = categoryId;
     if (country) payload.delivery_country = country;
     if (consent) payload.technical_requirements = details;
 
