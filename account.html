@@ -12,7 +12,9 @@
 
 <header>
   <div class="nav wrap">
-    <a class="brand" href="index.html"><b>RMW</b> Rolling Mill <em>World</em></a>
+    <a class="brand" href="index.html">
+      <b>RMW</b> Rolling Mill <em>World</em>
+    </a>
 
     <nav>
       <a href="index.html#categories">Categories</a>
@@ -31,6 +33,7 @@
 <main class="section wrap">
 
   <label>BUYER ACCOUNT</label>
+
   <h1>My RFQs</h1>
 
   <p>
@@ -56,90 +59,410 @@
 
 <script>
 async function loadMyRfqs() {
-  const msg = document.getElementById('accountMsg');
-  const list = document.getElementById('rfqList');
 
-  if (msg) msg.textContent = 'Loading your RFQs…';
+  const msg =
+    document.getElementById('accountMsg');
+
+  const list =
+    document.getElementById('rfqList');
+
+  if (msg) {
+    msg.textContent =
+      'Loading your RFQs…';
+  }
 
   try {
-    const sb = await getSupabaseClient();
 
-    const { data: sessionData, error: sessionError } =
-      await sb.auth.getSession();
+    const sb =
+      await getSupabaseClient();
 
-    if (sessionError) throw sessionError;
+    const {
+      data: sessionData,
+      error: sessionError
+    } = await sb.auth.getSession();
 
-    if (!sessionData.session || !sessionData.session.user) {
-      window.location.href = 'index.html';
+    if (sessionError) {
+      throw sessionError;
+    }
+
+    if (
+      !sessionData.session ||
+      !sessionData.session.user
+    ) {
+
+      window.location.href =
+        'index.html';
+
       return;
     }
 
-    const user = sessionData.session.user;
+    const user =
+      sessionData.session.user;
 
-    const { data, error } = await sb
+    const {
+      data,
+      error
+    } = await sb
       .from('rfqs')
-      .select('id, title, description, status, category_id, delivery_country, created_at')
+      .select(
+        'id, title, description, status, category_id, delivery_country, created_at'
+      )
       .eq('buyer_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', {
+        ascending: false
+      });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     if (!data || data.length === 0) {
+
       if (msg) {
-        msg.textContent = 'You have not submitted any RFQs yet.';
+        msg.textContent =
+          'You have not submitted any RFQs yet.';
       }
+
       return;
     }
 
-    if (msg) msg.textContent = '';
+    if (msg) {
+      msg.textContent = '';
+    }
 
-    list.innerHTML = data.map(rfq => `
-      <article style="border:1px solid #ddd;border-radius:12px;padding:20px;margin:16px 0">
-        <small>RFQ REFERENCE</small>
+    list.innerHTML =
+      data.map(rfq => `
 
-        <h2>${escapeHtml(rfq.title || 'Rolling Mill RFQ')}</h2>
+        <article
+          style="
+            border:1px solid #ddd;
+            border-radius:12px;
+            padding:20px;
+            margin:16px 0;
+          "
+        >
 
-        <p>${escapeHtml(rfq.description || '')}</p>
+          <small>
+            RFQ REFERENCE
+          </small>
 
-        <p>
-          <b>Status:</b> ${escapeHtml(rfq.status || '')}
-          ${rfq.delivery_country
-            ? ` · <b>Country:</b> ${escapeHtml(rfq.delivery_country)}`
-            : ''}
-        </p>
+          <h2>
+            ${escapeHtml(
+              rfq.title ||
+              'Rolling Mill RFQ'
+            )}
+          </h2>
 
-        <small>
-          Submitted: ${new Date(rfq.created_at).toLocaleDateString()}
-        </small>
+          <p>
+            ${escapeHtml(
+              rfq.description ||
+              ''
+            )}
+          </p>
 
-        <br><br>
+          <p>
+            <b>Status:</b>
+            ${escapeHtml(
+              rfq.status ||
+              ''
+            )}
 
-        <small>
-          Reference: ${escapeHtml(rfq.id)}
-        </small>
-      </article>
-    `).join('');
+            ${
+              rfq.delivery_country
+                ? `
+                  · <b>Country:</b>
+                  ${escapeHtml(
+                    rfq.delivery_country
+                  )}
+                `
+                : ''
+            }
+          </p>
+
+          <small>
+            Submitted:
+            ${
+              new Date(
+                rfq.created_at
+              ).toLocaleDateString()
+            }
+          </small>
+
+          <br><br>
+
+          <small>
+            Reference:
+            ${escapeHtml(rfq.id)}
+          </small>
+
+          <div
+            id="quotations-${rfq.id}"
+            style="margin-top:24px;"
+          >
+            <p>
+              Loading quotations…
+            </p>
+          </div>
+
+        </article>
+
+      `).join('');
+
+    for (const rfq of data) {
+      await loadQuotations(
+        sb,
+        rfq.id
+      );
+    }
 
   } catch (err) {
-    console.error('Could not load RFQs:', err);
+
+    console.error(
+      'Could not load RFQs:',
+      err
+    );
 
     if (msg) {
       msg.textContent =
-        err.message || 'Could not load your RFQs.';
+        err.message ||
+        'Could not load your RFQs.';
     }
   }
 }
 
+
+async function loadQuotations(
+  sb,
+  rfqId
+) {
+
+  const container =
+    document.getElementById(
+      'quotations-' + rfqId
+    );
+
+  if (!container) {
+    return;
+  }
+
+  try {
+
+    const {
+      data: quotations,
+      error
+    } = await sb
+      .from('quotations')
+      .select(
+        'id, price, currency, delivery_time, payment_terms, warranty, notes, status, created_at'
+      )
+      .eq('rfq_id', rfqId)
+      .order('created_at', {
+        ascending: false
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    if (
+      !quotations ||
+      quotations.length === 0
+    ) {
+
+      container.innerHTML = `
+        <div
+          style="
+            background:#f7f7f7;
+            border-radius:10px;
+            padding:16px;
+          "
+        >
+          <strong>
+            Quotations received
+          </strong>
+
+          <p>
+            No supplier quotations received yet.
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    container.innerHTML = `
+
+      <div
+        style="
+          background:#f7f7f7;
+          border-radius:10px;
+          padding:18px;
+        "
+      >
+
+        <h3>
+          Quotations received
+        </h3>
+
+        ${
+          quotations.map(
+            quotation => `
+
+              <div
+                style="
+                  background:white;
+                  border:1px solid #ddd;
+                  border-radius:10px;
+                  padding:18px;
+                  margin-top:14px;
+                "
+              >
+
+                <p>
+                  <strong>
+                    Price:
+                  </strong>
+
+                  ${escapeHtml(
+                    quotation.currency ||
+                    ''
+                  )}
+
+                  ${escapeHtml(
+                    quotation.price
+                  )}
+                </p>
+
+                <p>
+                  <strong>
+                    Delivery:
+                  </strong>
+
+                  ${escapeHtml(
+                    quotation.delivery_time ||
+                    'Not specified'
+                  )}
+                </p>
+
+                <p>
+                  <strong>
+                    Payment terms:
+                  </strong>
+
+                  ${escapeHtml(
+                    quotation.payment_terms ||
+                    'Not specified'
+                  )}
+                </p>
+
+                <p>
+                  <strong>
+                    Warranty:
+                  </strong>
+
+                  ${escapeHtml(
+                    quotation.warranty ||
+                    'Not specified'
+                  )}
+                </p>
+
+                ${
+                  quotation.notes
+                    ? `
+                      <p>
+                        <strong>
+                          Notes:
+                        </strong>
+
+                        ${escapeHtml(
+                          quotation.notes
+                        )}
+                      </p>
+                    `
+                    : ''
+                }
+
+                <p>
+                  <strong>
+                    Status:
+                  </strong>
+
+                  ${escapeHtml(
+                    quotation.status ||
+                    ''
+                  )}
+                </p>
+
+                <small>
+                  Quotation submitted:
+                  ${
+                    new Date(
+                      quotation.created_at
+                    ).toLocaleDateString()
+                  }
+                </small>
+
+              </div>
+
+            `
+          ).join('')
+        }
+
+      </div>
+
+    `;
+
+  } catch (err) {
+
+    console.error(
+      'Could not load quotations:',
+      err
+    );
+
+    container.innerHTML = `
+      <div
+        style="
+          background:#fff4f4;
+          border-radius:10px;
+          padding:16px;
+        "
+      >
+        <strong>
+          Quotations received
+        </strong>
+
+        <p>
+          Could not load quotations.
+        </p>
+
+        <small>
+          ${escapeHtml(
+            err.message ||
+            'Unknown error.'
+          )}
+        </small>
+      </div>
+    `;
+  }
+}
+
+
 function escapeHtml(value) {
+
   return String(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+
 }
 
-document.addEventListener('DOMContentLoaded', loadMyRfqs);
+
+document.addEventListener(
+  'DOMContentLoaded',
+  loadMyRfqs
+);
 </script>
 
 </body>
