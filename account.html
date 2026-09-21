@@ -247,30 +247,15 @@ async function loadQuotations(
 
   try {
 
-   const {
+ const {
   data: quotations,
   error
-} = await sb
-  .from('quotations')
-  .select(`
-    id,
-    price,
-    currency,
-    delivery_time,
-    payment_terms,
-    warranty,
-    notes,
-    status,
-    created_at,
-    supplier_company_id,
-    companies (
-      company_name
-    )
-  `)
-  .eq('rfq_id', rfqId)
-  .order('created_at', {
-    ascending: false
-  });
+} = await sb.rpc(
+  'get_my_rfq_quotations',
+  {
+    p_rfq_id: rfqId
+  }
+);
 
     if (error) {
       throw error;
@@ -335,8 +320,8 @@ async function loadQuotations(
   </strong>
 
   ${escapeHtml(
-    quotation.companies?.company_name ||
-    'Supplier'
+   quotation.supplier_company_name ||
+'Supplier'
   )}
 </p>
                 <p>
