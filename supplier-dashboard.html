@@ -1,0 +1,197 @@
+<!doctype html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Supplier Dashboard | Rolling Mill World</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header>
+  <div class="nav wrap">
+    <a class="brand" href="index.html">
+      <b>RMW</b> Rolling Mill <em>World</em>
+    </a>
+
+```
+<nav>
+  <a href="directory.html">Suppliers</a>
+  <a href="index.html#categories">Categories</a>
+</nav>
+
+<a class="btn dark" href="index.html">Home</a>
+```
+
+  </div>
+</header>
+
+<main class="section wrap">
+
+<label>SUPPLIER DASHBOARD</label>
+
+  <h1>Open Buyer RFQs</h1>
+
+  <p>
+    Review current buyer requirements and respond with your quotation.
+  </p>
+
+  <div id="supplierMsg"></div>
+
+  <div id="rfqList">
+    <p>Loading RFQs…</p>
+  </div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <small>© 2026 Rolling Mill World</small>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+<script src="auth.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+
+  const msg = document.getElementById('supplierMsg');
+  const list = document.getElementById('rfqList');
+
+  try {
+
+    const sb = await getSupabaseClient();
+
+    const {
+      data: sessionData,
+      error: sessionError
+    } = await sb.auth.getSession();
+
+    if (sessionError) {
+      throw sessionError;
+    }
+
+    if (!sessionData.session || !sessionData.session.user) {
+      if (msg) {
+        msg.textContent =
+          'Please sign in before viewing buyer RFQs.';
+      }
+
+      if (list) {
+        list.innerHTML =
+          '<p><a href="index.html">Return to Rolling Mill World</a> and sign in.</p>';
+      }
+
+      return;
+    }
+
+    const { data: rfqs, error } = await sb
+      .from('rfqs')
+      .select(
+        'id, title, description, status, category_id, delivery_country, created_at'
+      )
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!rfqs || rfqs.length === 0) {
+      if (list) {
+        list.innerHTML =
+          '<p>No open buyer RFQs are available right now.</p>';
+      }
+
+      return;
+    }
+
+    if (list) {
+      list.innerHTML = rfqs.map(rfq => {
+
+        const date = new Date(rfq.created_at)
+          .toLocaleDateString();
+
+        const country = rfq.delivery_country
+          ? '<p><strong>Delivery country:</strong> ' +
+            escapeHtml(rfq.delivery_country) +
+            '</p>'
+          : '';
+
+        return `
+          <article class="card" style="margin-top:20px; padding:24px;">
+
+            <small>RFQ REFERENCE</small>
+
+            <h2>${escapeHtml(rfq.title || 'Buyer RFQ')}</h2>
+
+            <p>
+              ${escapeHtml(rfq.description || 'No description provided.')}
+            </p>
+
+            ${country}
+
+            <p>
+              <strong>Status:</strong>
+              ${escapeHtml(rfq.status)}
+            </p>
+
+            <p>
+              <strong>Submitted:</strong>
+              ${date}
+            </p>
+
+            <p>
+              <small>
+                Reference: ${escapeHtml(rfq.id)}
+              </small>
+            </p>
+
+            <button
+              class="btn blue"
+              type="button"
+              onclick="alert('Quotation form will be added in the next step.')"
+            >
+              View RFQ / Submit quotation
+            </button>
+
+          </article>
+        `;
+
+      }).join('');
+    }
+
+  } catch (err) {
+
+    console.error('Supplier RFQ loading failed:', err);
+
+    if (msg) {
+      msg.textContent =
+        err.message || 'Could not load buyer RFQs.';
+    }
+
+    if (list) {
+      list.innerHTML = '';
+    }
+  }
+
+});
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+</script>
+
+</body>
+</html>
