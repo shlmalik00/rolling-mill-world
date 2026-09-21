@@ -35,7 +35,7 @@
   <h1>Open Buyer RFQs</h1>
 
   <p>
-    Review current buyer requirements and respond with your quotation.
+    Review current buyer requirements and submit your quotation.
   </p>
 
   <div id="supplierMsg"></div>
@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!sessionData.session || !sessionData.session.user) {
+
       if (msg) {
         msg.textContent =
           'Please sign in before viewing buyer RFQs.';
@@ -86,6 +87,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (list) {
         list.innerHTML =
           '<p><a href="index.html">Return to Rolling Mill World</a> and sign in.</p>';
+      }
+
+      return;
+    }
+
+    const user = sessionData.session.user;
+
+    const { data: company, error: companyError } = await sb
+      .from('companies')
+      .select('id, company_name')
+      .eq('owner_id', user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (companyError) {
+      throw companyError;
+    }
+
+    if (!company) {
+
+      if (msg) {
+        msg.textContent =
+          'Please create your supplier profile before submitting quotations.';
+      }
+
+      if (list) {
+        list.innerHTML = '';
       }
 
       return;
@@ -104,6 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!rfqs || rfqs.length === 0) {
+
       if (list) {
         list.innerHTML =
           '<p>No open buyer RFQs are available right now.</p>';
@@ -113,26 +142,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (list) {
+
       list.innerHTML = rfqs.map(rfq => {
 
         const date = new Date(rfq.created_at)
           .toLocaleDateString();
 
         const country = rfq.delivery_country
-          ? '<p><strong>Delivery country:</strong> ' +
-            escapeHtml(rfq.delivery_country) +
-            '</p>'
+          ? `
+            <p>
+              <strong>Delivery country:</strong>
+              ${escapeHtml(rfq.delivery_country)}
+            </p>
+          `
           : '';
 
         return `
-          <article class="card" style="margin-top:20px; padding:24px;">
+          <article
+            class="card"
+            style="margin-top:20px; padding:24px;"
+          >
 
             <small>RFQ REFERENCE</small>
 
-            <h2>${escapeHtml(rfq.title || 'Buyer RFQ')}</h2>
+            <h2>
+              ${escapeHtml(rfq.title || 'Buyer RFQ')}
+            </h2>
 
             <p>
-              ${escapeHtml(rfq.description || 'No description provided.')}
+              ${escapeHtml(
+                rfq.description || 'No description provided.'
+              )}
             </p>
 
             ${country}
@@ -156,42 +196,282 @@ document.addEventListener('DOMContentLoaded', async () => {
             <button
               class="btn blue"
               type="button"
-              onclick="alert('Quotation form will be added in the next step.')"
+              onclick="toggleQuotationForm('${rfq.id}')"
             >
               View RFQ / Submit quotation
             </button>
 
-          </article>
-        `;
+            <div
+              id="quotationForm-${rfq.id}"
+              style="display:none; margin-top:24px;"
+            >
 
-      }).join('');
-    }
+              <hr>
 
-  } catch (err) {
+              <h3>Submit your quotation</h3>
 
-    console.error('Supplier RFQ loading failed:', err);
+              <form
+                onsubmit="submitQuotation(event, '${rfq.id}')"
+              >
 
-    if (msg) {
-      msg.textContent =
-        err.message || 'Could not load buyer RFQs.';
-    }
+                <input
+                  id="price-${rfq.id}"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  placeholder="Price"
+                >
 
-    if (list) {
-      list.innerHTML = '';
-    }
-  }
+                <select
+                  id="currency-${rfq.id}"
+                  required
+                >
+                  <option value="">Select currency</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="INR">INR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="AED">AED</option>
+                  <option value="CNY">CNY</option>
+                </select>
+
+                <input
+                  id="delivery-${rfq.id}"
+                  required
+                  placeholder="Delivery time (e.g. 12 weeks)"
+                >
+
+                <input
+                  id="payment-${rfq.id}"
+                  required
+                  placeholder="Payment terms"
+                >
+
+                <input
+                  id="warranty-${rfq.id}"
+                  placeholder="Warranty"
+                >
+
+                <textarea
+                  id="notes-${rfq.id}"
+                  rows="5"
+                  placeholder="Additional notes / quotation details"
+                ></textarea>
+
+```
+            <button
+              class="btn blue"
+              type="submit"
+              id="submitQuotation-${rfq.id}"
+            >
+              Submit quotation
+            </button>
+
+            <p
+              id="quotationMsg-${rfq.id}"
+            ></p>
+
+          </form>
+
+        </div>
+
+      </article>
+    `;
+
+  }).join('');
+}
+```
+
+} catch (err) {
+
+```
+console.error(
+  'Supplier RFQ loading failed:',
+  err
+);
+
+if (msg) {
+  msg.textContent =
+    err.message || 'Could not load buyer RFQs.';
+}
+
+if (list) {
+  list.innerHTML = '';
+}
+```
+
+}
 
 });
 
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+function toggleQuotationForm(rfqId) {
+
+const form = document.getElementById(
+'quotationForm-' + rfqId
+);
+
+if (!form) return;
+
+if (form.style.display === 'none') {
+form.style.display = 'block';
+} else {
+form.style.display = 'none';
 }
-</script>
+}
+
+async function submitQuotation(event, rfqId) {
+
+event.preventDefault();
+
+const button = document.getElementById(
+'submitQuotation-' + rfqId
+);
+
+const msg = document.getElementById(
+'quotationMsg-' + rfqId
+);
+
+if (msg) {
+msg.textContent = 'Submitting quotation…';
+}
+
+if (button) {
+button.disabled = true;
+}
+
+try {
+
+```
+const sb = await getSupabaseClient();
+
+const {
+  data: sessionData,
+  error: sessionError
+} = await sb.auth.getSession();
+
+if (sessionError) {
+  throw sessionError;
+}
+
+if (
+  !sessionData.session ||
+  !sessionData.session.user
+) {
+  throw new Error(
+    'Please sign in before submitting a quotation.'
+  );
+}
+
+const user = sessionData.session.user;
+
+const {
+  data: company,
+  error: companyError
+} = await sb
+  .from('companies')
+  .select('id')
+  .eq('owner_id', user.id)
+  .limit(1)
+  .maybeSingle();
+
+if (companyError) {
+  throw companyError;
+}
+
+if (!company) {
+  throw new Error(
+    'Supplier company profile not found.'
+  );
+}
+
+const price = document.getElementById(
+  'price-' + rfqId
+).value;
+
+const currency = document.getElementById(
+  'currency-' + rfqId
+).value;
+
+const deliveryTime = document.getElementById(
+  'delivery-' + rfqId
+).value.trim();
+
+const paymentTerms = document.getElementById(
+  'payment-' + rfqId
+).value.trim();
+
+const warranty = document.getElementById(
+  'warranty-' + rfqId
+).value.trim();
+
+const notes = document.getElementById(
+  'notes-' + rfqId
+).value.trim();
+
+const { error } = await sb
+  .from('quotations')
+  .insert({
+    rfq_id: rfqId,
+    supplier_company_id: company.id,
+    price: Number(price),
+    currency: currency,
+    delivery_time: deliveryTime,
+    payment_terms: paymentTerms,
+    warranty: warranty,
+    notes: notes,
+    status: 'submitted'
+  });
+
+if (error) {
+  throw error;
+}
+
+if (msg) {
+  msg.textContent =
+    'Quotation submitted successfully.';
+}
+
+event.target.reset();
+
+if (button) {
+  button.disabled = false;
+}
+```
+
+} catch (err) {
+
+```
+console.error(
+  'Quotation submission failed:',
+  err
+);
+
+if (msg) {
+  msg.textContent =
+    err.message ||
+    'Could not submit quotation.';
+}
+
+if (button) {
+  button.disabled = false;
+}
+```
+
+}
+}
+
+function escapeHtml(value) {
+
+return String(value)
+.replace(/&/g, '&')
+.replace(/</g, '<')
+.replace(/>/g, '>')
+.replace(/"/g, '"')
+.replace(/'/g, ''');
+
+} </script>
 
 </body>
 </html>
+
