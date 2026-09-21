@@ -78,7 +78,7 @@ async function loadMyRfqs() {
 
     const { data, error } = await sb
       .from('rfqs')
-      .select('id, title, description, status, category_id, delivery_country, created_at')
+     .select('id, title, description, status, category_id, delivery_country, created_at, category:categories(name)')
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
 
