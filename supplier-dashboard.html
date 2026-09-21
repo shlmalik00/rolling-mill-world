@@ -12,18 +12,19 @@
 
 <header>
   <div class="nav wrap">
-    <a class="brand" href="index.html">
-      <b>RMW</b> Rolling Mill <em>World</em>
-    </a>
 
-```
+
+<a class="brand" href="index.html">
+  <b>RMW</b> Rolling Mill <em>World</em>
+</a>
+
 <nav>
   <a href="directory.html">Suppliers</a>
   <a href="index.html#categories">Categories</a>
 </nav>
 
 <a class="btn dark" href="index.html">Home</a>
-```
+
 
   </div>
 </header>
@@ -40,13 +41,10 @@
 
   <div id="supplierMsg"></div>
 
- <div id="rfqList">
-  <p style="font-weight:bold;">JAVASCRIPT TEST — PAGE LOADED</p>
-</div>
-<script>
-document.getElementById('rfqList').innerHTML =
-  '<p style="font-weight:bold;">INLINE JAVASCRIPT IS RUNNING</p>';
-</script>
+  <div id="rfqList">
+    <p>Loading RFQs…</p>
+  </div>
+
 </main>
 
 <footer>
@@ -93,8 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!sessionData.session || !sessionData.session.user) {
 
       if (msg) {
-        msg.textContent =
-          'You are not signed in.';
+        msg.textContent = 'You are not signed in.';
       }
 
       if (list) {
@@ -106,7 +103,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (list) {
-      list.innerHTML = '<p>Loading open RFQs from Supabase…</p>';
+      list.innerHTML =
+        '<p>Loading open RFQs from Supabase…</p>';
     }
 
     const { data: rfqs, error: rfqError } = await sb
@@ -143,8 +141,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       list.innerHTML = rfqs.map(rfq => {
 
-        const date = new Date(rfq.created_at)
-          .toLocaleDateString();
+        const date = new Date(
+          rfq.created_at
+        ).toLocaleDateString();
 
         return `
           <article
@@ -155,12 +154,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             <small>RFQ REFERENCE</small>
 
             <h2>
-              ${escapeHtml(rfq.title || 'Buyer RFQ')}
+              ${escapeHtml(
+                rfq.title || 'Buyer RFQ'
+              )}
             </h2>
 
             <p>
               ${escapeHtml(
-                rfq.description || 'No description provided.'
+                rfq.description ||
+                'No description provided.'
               )}
             </p>
 
@@ -169,7 +171,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `
                   <p>
                     <strong>Delivery country:</strong>
-                    ${escapeHtml(rfq.delivery_country)}
+                    ${escapeHtml(
+                      rfq.delivery_country
+                    )}
                   </p>
                 `
                 : ''
@@ -177,7 +181,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             <p>
               <strong>Status:</strong>
-              ${escapeHtml(rfq.status)}
+              ${escapeHtml(
+                rfq.status
+              )}
             </p>
 
             <p>
@@ -187,7 +193,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             <p>
               <small>
-                Reference: ${escapeHtml(rfq.id)}
+                Reference:
+                ${escapeHtml(rfq.id)}
               </small>
             </p>
 
@@ -225,13 +232,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                   id="currency-${rfq.id}"
                   required
                 >
-                  <option value="">Select currency</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="INR">INR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="AED">AED</option>
-                  <option value="CNY">CNY</option>
+
+                  <option value="">
+                    Select currency
+                  </option>
+
+                  <option value="USD">
+                    USD
+                  </option>
+
+                  <option value="EUR">
+                    EUR
+                  </option>
+
+                  <option value="INR">
+                    INR
+                  </option>
+
+                  <option value="GBP">
+                    GBP
+                  </option>
+
+                  <option value="AED">
+                    AED
+                  </option>
+
+                  <option value="CNY">
+                    CNY
+                  </option>
+
                 </select>
 
                 <input
@@ -257,7 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   placeholder="Additional notes / quotation details"
                 ></textarea>
 
-```
+
             <button
               class="btn blue"
               type="submit"
@@ -266,7 +295,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               Submit quotation
             </button>
 
-            <p id="quotationMsg-${rfq.id}"></p>
+            <p
+              id="quotationMsg-${rfq.id}"
+            ></p>
 
           </form>
 
@@ -277,11 +308,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   }).join('');
 }
-```
+
 
 } catch (err) {
 
-```
+
 console.error(
   'Supplier dashboard error:',
   err
@@ -289,14 +320,15 @@ console.error(
 
 if (msg) {
   msg.textContent =
-    err.message || 'Unknown error.';
+    err.message ||
+    'Unknown error.';
 }
 
 if (list) {
   list.innerHTML =
     '<p>The dashboard could not load the RFQs.</p>';
 }
-```
+
 
 }
 
@@ -308,7 +340,9 @@ const form = document.getElementById(
 'quotationForm-' + rfqId
 );
 
-if (!form) return;
+if (!form) {
+return;
+}
 
 form.style.display =
 form.style.display === 'none'
@@ -316,20 +350,26 @@ form.style.display === 'none'
 : 'none';
 }
 
-async function submitQuotation(event, rfqId) {
+async function submitQuotation(
+event,
+rfqId
+) {
 
 event.preventDefault();
 
-const button = document.getElementById(
+const button =
+document.getElementById(
 'submitQuotation-' + rfqId
 );
 
-const msg = document.getElementById(
+const msg =
+document.getElementById(
 'quotationMsg-' + rfqId
 );
 
 if (msg) {
-msg.textContent = 'Submitting quotation…';
+msg.textContent =
+'Submitting quotation…';
 }
 
 if (button) {
@@ -338,8 +378,9 @@ button.disabled = true;
 
 try {
 
-```
-const sb = await getSupabaseClient();
+
+const sb =
+  await getSupabaseClient();
 
 const {
   data: sessionData,
@@ -350,13 +391,19 @@ if (sessionError) {
   throw sessionError;
 }
 
-if (!sessionData.session || !sessionData.session.user) {
+if (
+  !sessionData.session ||
+  !sessionData.session.user
+) {
+
   throw new Error(
     'Please sign in before submitting a quotation.'
   );
+
 }
 
-const user = sessionData.session.user;
+const user =
+  sessionData.session.user;
 
 const {
   data: company,
@@ -378,43 +425,50 @@ if (!company) {
   );
 }
 
-const price = document.getElementById(
-  'price-' + rfqId
-).value;
+const price =
+  document.getElementById(
+    'price-' + rfqId
+  ).value;
 
-const currency = document.getElementById(
-  'currency-' + rfqId
-).value;
+const currency =
+  document.getElementById(
+    'currency-' + rfqId
+  ).value;
 
-const deliveryTime = document.getElementById(
-  'delivery-' + rfqId
-).value.trim();
+const deliveryTime =
+  document.getElementById(
+    'delivery-' + rfqId
+  ).value.trim();
 
-const paymentTerms = document.getElementById(
-  'payment-' + rfqId
-).value.trim();
+const paymentTerms =
+  document.getElementById(
+    'payment-' + rfqId
+  ).value.trim();
 
-const warranty = document.getElementById(
-  'warranty-' + rfqId
-).value.trim();
+const warranty =
+  document.getElementById(
+    'warranty-' + rfqId
+  ).value.trim();
 
-const notes = document.getElementById(
-  'notes-' + rfqId
-).value.trim();
+const notes =
+  document.getElementById(
+    'notes-' + rfqId
+  ).value.trim();
 
-const { error } = await sb
-  .from('quotations')
-  .insert({
-    rfq_id: rfqId,
-    supplier_company_id: company.id,
-    price: Number(price),
-    currency: currency,
-    delivery_time: deliveryTime,
-    payment_terms: paymentTerms,
-    warranty: warranty,
-    notes: notes,
-    status: 'submitted'
-  });
+const { error } =
+  await sb
+    .from('quotations')
+    .insert({
+      rfq_id: rfqId,
+      supplier_company_id: company.id,
+      price: Number(price),
+      currency: currency,
+      delivery_time: deliveryTime,
+      payment_terms: paymentTerms,
+      warranty: warranty,
+      notes: notes,
+      status: 'submitted'
+    });
 
 if (error) {
   throw error;
@@ -427,14 +481,10 @@ if (msg) {
 
 event.target.reset();
 
-if (button) {
-  button.disabled = false;
-}
-```
 
 } catch (err) {
 
-```
+
 console.error(
   'Quotation submission failed:',
   err
@@ -446,22 +496,28 @@ if (msg) {
     'Could not submit quotation.';
 }
 
+
+} finally {
+
+
 if (button) {
   button.disabled = false;
 }
-```
+
 
 }
+
 }
 
+<script>
 function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+</script>
 
-return String(value)
-.replace(/&/g, '&')
-.replace(/</g, '<')
-.replace(/>/g, '>')
-.replace(/"/g, '"')
-.replace(/'/g, ''');
-
-} </script>
 
