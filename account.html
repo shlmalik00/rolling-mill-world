@@ -100,22 +100,23 @@ async function loadMyRfqs() {
       sessionData.session.user;
 
     const {
-      data,
-      error
-    } = await sb
-      .from('rfqs')
-      .select(
-        'id, title, description, status, category_id, delivery_country, created_at'
-      )
-      .eq('buyer_id', user.id)
-      .order('created_at', {
-        ascending: false
-      });
+  data,
+  error
+} = await sb
+  .from('rfqs')
+  .select(
+    'id, title, description, status, category_id, delivery_country, created_at'
+  )
+  .eq('buyer_id', user.id)
+  .order('created_at', {
+    ascending: false
+  });
 
-    if (error) {
-      throw error;
-    }
+if (error) {
+  throw error;
+}
 
+console.log('MY RFQS:', data);
     if (!data || data.length === 0) {
 
       if (msg) {
