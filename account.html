@@ -482,8 +482,7 @@ function escapeHtml(value) {
 
 }
 
-
-async function shortlistQuotation(
+async function acceptQuotation(
   quotationId
 ) {
 
@@ -493,7 +492,7 @@ async function shortlistQuotation(
 
   const confirmed =
     window.confirm(
-      'Shortlist this quotation?'
+      'Accept this quotation?'
     );
 
   if (!confirmed) {
@@ -510,7 +509,7 @@ async function shortlistQuotation(
     } = await sb
       .from('quotations')
       .update({
-        status: 'shortlisted'
+        status: 'accepted'
       })
       .eq('id', quotationId);
 
@@ -519,7 +518,7 @@ async function shortlistQuotation(
     }
 
     alert(
-      'Quotation shortlisted successfully.'
+      'Quotation accepted successfully.'
     );
 
     await loadMyRfqs();
@@ -527,13 +526,13 @@ async function shortlistQuotation(
   } catch (err) {
 
     console.error(
-      'Could not shortlist quotation:',
+      'Could not accept quotation:',
       err
     );
 
     alert(
       err.message ||
-      'Could not shortlist quotation.'
+      'Could not accept quotation.'
     );
   }
 }
