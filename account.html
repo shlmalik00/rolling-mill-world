@@ -411,7 +411,7 @@ async function loadQuotations(
 
                 <br><br>
 
-               ${
+ ${
   quotation.status === 'accepted'
     ? `
       <p>
@@ -420,33 +420,43 @@ async function loadQuotations(
         </strong>
       </p>
     `
-    : quotation.status === 'shortlisted'
+    : quotations.some(
+        q => q.status === 'accepted'
+      )
       ? `
-        <button
-          class="btn"
-          type="button"
-          onclick="acceptQuotation('${quotation.id}')"
-        >
-          Accept quotation
-        </button>
+        <p>
+          <strong>
+            Another quotation has been accepted for this RFQ.
+          </strong>
+        </p>
       `
-      : `
-        <button
-          class="btn"
-          type="button"
-          onclick="shortlistQuotation('${quotation.id}')"
-        >
-          Shortlist quotation
-        </button>
+      : quotation.status === 'shortlisted'
+        ? `
+          <button
+            class="btn"
+            type="button"
+            onclick="acceptQuotation('${quotation.id}')"
+          >
+            Accept quotation
+          </button>
+        `
+        : `
+          <button
+            class="btn"
+            type="button"
+            onclick="shortlistQuotation('${quotation.id}')"
+          >
+            Shortlist quotation
+          </button>
 
-        <button
-          class="btn"
-          type="button"
-          onclick="acceptQuotation('${quotation.id}')"
-        >
-          Accept quotation
-        </button>
-      `
+          <button
+            class="btn"
+            type="button"
+            onclick="acceptQuotation('${quotation.id}')"
+          >
+            Accept quotation
+          </button>
+        `
 }
               </div>
 
