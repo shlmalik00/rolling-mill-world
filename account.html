@@ -399,7 +399,7 @@ async function loadQuotations(
                   )}
                 </p>
 
-                <small>
+                               <small>
                   Quotation submitted:
                   ${
                     new Date(
@@ -407,6 +407,16 @@ async function loadQuotations(
                     ).toLocaleDateString()
                   }
                 </small>
+
+                <br><br>
+
+                <button
+                  class="btn"
+                  type="button"
+                  onclick="shortlistQuotation('${quotation.id}')"
+                >
+                  Shortlist quotation
+                </button>
 
               </div>
 
