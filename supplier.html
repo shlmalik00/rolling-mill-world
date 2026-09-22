@@ -107,6 +107,83 @@
 
 </main>
 
+<div id="authModal" class="authModal" aria-hidden="true">
+  <div class="authCard">
+
+    <button
+      class="authClose"
+      type="button"
+      onclick="closeAuth()"
+    >
+      ×
+    </button>
+
+    <label>ROLLING MILL WORLD ACCOUNT</label>
+
+    <h2 id="authTitle">
+      Welcome back
+    </h2>
+
+    <p id="authSubtitle">
+      Sign in to your Rolling Mill World account.
+    </p>
+
+    <form id="authForm">
+
+      <input
+        id="authMode"
+        type="hidden"
+        value="login"
+      >
+
+      <input
+        id="authName"
+        style="display:none"
+        placeholder="Your name"
+        autocomplete="name"
+      >
+
+      <input
+        id="authEmail"
+        required
+        type="email"
+        placeholder="Business email"
+        autocomplete="email"
+      >
+
+      <input
+        id="authPassword"
+        required
+        type="password"
+        minlength="6"
+        placeholder="Password"
+        autocomplete="current-password"
+      >
+
+      <button
+        id="authSubmit"
+        class="btn blue"
+        type="submit"
+      >
+        Sign in
+      </button>
+
+      <div id="authMsg" class="authMsg"></div>
+
+    </form>
+
+    <div id="authToggle" class="authToggle">
+      New to Rolling Mill World?
+      <button
+        type="button"
+        onclick="setAuthMode('signup')"
+      >
+        Create an account
+      </button>
+    </div>
+
+  </div>
+</div>  
 <footer>
   <div class="wrap">
     <small>© 2026 Rolling Mill World</small>
