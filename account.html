@@ -475,10 +475,60 @@ function escapeHtml(value) {
 }
 
 
-document.addEventListener(
-  'DOMContentLoaded',
-  loadMyRfqs
-);
+async function shortlistQuotation(
+  quotationId
+) {
+
+  if (!quotationId) {
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      'Shortlist this quotation?'
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+
+    const sb =
+      await getSupabaseClient();
+
+    const {
+      error
+    } = await sb
+      .from('quotations')
+      .update({
+        status: 'shortlisted'
+      })
+      .eq('id', quotationId);
+
+    if (error) {
+      throw error;
+    }
+
+    alert(
+      'Quotation shortlisted successfully.'
+    );
+
+    await loadMyRfqs();
+
+  } catch (err) {
+
+    console.error(
+      'Could not shortlist quotation:',
+      err
+    );
+
+    alert(
+      err.message ||
+      'Could not shortlist quotation.'
+    );
+  }
+}
 </script>
 
 </body>
