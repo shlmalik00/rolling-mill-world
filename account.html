@@ -411,21 +411,43 @@ async function loadQuotations(
 
                 <br><br>
 
-                <button
-                  class="btn"
-                  type="button"
-                  onclick="shortlistQuotation('${quotation.id}')"
-                >
-                  Shortlist quotation
-                </button>
+               ${
+  quotation.status === 'accepted'
+    ? `
+      <p>
+        <strong>
+          ✓ Quotation accepted
+        </strong>
+      </p>
+    `
+    : quotation.status === 'shortlisted'
+      ? `
+        <button
+          class="btn"
+          type="button"
+          onclick="acceptQuotation('${quotation.id}')"
+        >
+          Accept quotation
+        </button>
+      `
+      : `
+        <button
+          class="btn"
+          type="button"
+          onclick="shortlistQuotation('${quotation.id}')"
+        >
+          Shortlist quotation
+        </button>
 
-<button
-  class="btn"
-  type="button"
-  onclick="acceptQuotation('${quotation.id}')"
->
-  Accept quotation
-</button>
+        <button
+          class="btn"
+          type="button"
+          onclick="acceptQuotation('${quotation.id}')"
+        >
+          Accept quotation
+        </button>
+      `
+}
               </div>
 
             `
