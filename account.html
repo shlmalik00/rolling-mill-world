@@ -530,7 +530,15 @@ async function shortlistQuotation(
     );
   }
 }
-  console.log('ACCOUNT SCRIPT LOADED');
+ console.log('ACCOUNT SCRIPT LOADED');
+
+document.addEventListener(
+  'DOMContentLoaded',
+  () => {
+    console.log('LOAD MY RFQS STARTED');
+    loadMyRfqs();
+  }
+);
 </script>
 
 </body>
