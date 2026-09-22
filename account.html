@@ -536,18 +536,18 @@ async function acceptQuotation(
     const sb =
       await getSupabaseClient();
 
-    const {
-      error
-    } = await sb
-      .from('quotations')
-      .update({
-        status: 'accepted'
-      })
-      .eq('id', quotationId);
+   const {
+  error
+} = await sb.rpc(
+  'accept_rfq_quotation',
+  {
+    p_quotation_id: quotationId
+  }
+);
 
-    if (error) {
-      throw error;
-    }
+if (error) {
+  throw error;
+}
 
     alert(
       'Quotation accepted successfully.'
