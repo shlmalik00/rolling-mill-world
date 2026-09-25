@@ -70,3 +70,66 @@ const data = [
     0
   ]
 ];
+
+function render() {
+  const q =
+    (document.getElementById('q').value || '').toLowerCase();
+
+  const c =
+    document.getElementById('cat').value;
+
+  const co =
+    document.getElementById('country').value;
+
+  const a = data.filter(
+    x =>
+      (!q || x.join(' ').toLowerCase().includes(q)) &&
+      (!c || x[2] === c) &&
+      (!co || x[1] === co)
+  );
+
+  document.getElementById('count').textContent =
+    a.length + ' suppliers';
+
+  document.getElementById('results').innerHTML =
+    a.map(
+      x => `
+        <article class="supplier">
+          <div>
+            <h3>${x[0]}</h3>
+            <p>${x[1]} · ${x[3]}</p>
+            <span class="tag">${x[2]}</span>
+            <span class="tag">Public Listing</span>
+          </div>
+
+          <a
+            class="btn dark"
+            href="index.html#rfq"
+          >
+            Send RFQ
+          </a>
+        </article>
+      `
+    ).join('') ||
+    '<p>No matching suppliers yet.</p>';
+}
+
+document.addEventListener(
+  'DOMContentLoaded',
+  () => {
+    const p =
+      new URLSearchParams(location.search);
+
+    if (p.get('category')) {
+      document.getElementById('cat').value =
+        p.get('category');
+    }
+
+    if (localStorage.getItem('q')) {
+      document.getElementById('q').value =
+        localStorage.getItem('q');
+    }
+
+    render();
+  }
+);
