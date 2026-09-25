@@ -4,70 +4,70 @@ const data = [
     'India',
     'Machinery',
     'Section mills, structural mills, TMT/rebar mills, wire rod mills, strip mills and turnkey rolling-mill solutions',
-    0
+    'https://gprm.in/'
   ],
   [
     'A.S. Precision Machines Pvt. Ltd.',
     'India',
     'Machinery',
     'Rebar mills, section mills, strip mills, merchant bar mills, wire rod mills and rolling-mill equipment',
-    0
+    'https://www.aspm.in/'
   ],
   [
     'J.S Rolling Mill Industries',
     'India',
     'Machinery',
     'Turnkey rolling mills, mill stands, gearboxes, shears, conveyors and quenching systems',
-    0
+    'https://jsrollingmillindustries.com/'
   ],
   [
     'Laxmi Industries',
     'India',
     'Machinery',
     'Rolling mills, wire rod mills, continuous casting machines, mill stands, rolls and spare parts',
-    0
+    'https://www.laxmi.industries/'
   ],
   [
     'Avtar Foundry & Workshop',
     'India',
     'Machinery',
     'Rolling mill plants, housingless stands, gearboxes, cooling beds, shears, rolls and mill components',
-    0
+    'https://www.avtarsteelmillplant.com/'
   ],
   [
     'Multi Roll Tech',
     'India',
     'Machinery',
     'Section mills, TMT mills, hot-steel mills, wire-rod mills, housingless mills, rolls and gearboxes',
-    0
+    'https://multirolltech.com/'
   ],
   [
     'R.S. Udyog',
     'India',
     'Spare Parts',
     'Rolling-mill rolls, indefinite-chilled rolls, CI rolls and rolling-mill machinery',
-    0
+    'https://rsudyog.com/'
   ],
   [
     'Vimco Rolls Industries',
     'India',
     'Spare Parts',
     'Adamite rolls, alloy-steel-base rolls, SG iron rolls, chilled cast-iron rolls and forged rolls',
-    0
+    'https://vimcorolls.com/'
   ],
   [
     'ADK Machines',
     'Turkey',
     'Machinery',
     'Turnkey rolling mills, meltshop technology, machinery, spare parts and commissioning',
-    0
+    'https://www.adkmachines.com/'
   ],
   [
     'Rana Steel',
     'Turkey',
     'Machinery',
     'Rolling mills, rolling-mill equipment, meltshops and turnkey steel-plant solutions',
-    0
+    'https://www.ranademir.com/'
   ]
 ];
 
@@ -102,12 +102,23 @@ function render() {
             <span class="tag">Public Listing</span>
           </div>
 
-          <a
-            class="btn dark"
-            href="index.html#rfq"
-          >
-            Send RFQ
-          </a>
+          <div>
+            <a
+              class="btn dark"
+              href="${x[4]}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Visit Website
+            </a>
+
+            <a
+              class="btn dark"
+              href="index.html#rfq"
+            >
+              Send RFQ
+            </a>
+          </div>
         </article>
       `
     ).join('') ||
