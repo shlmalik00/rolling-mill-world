@@ -1,2 +1,72 @@
-const data=[['Prime Rolling Technologies','India','Machinery','Complete rebar mills, bar mills, finishing lines',1],['SteelForge Engineering','Turkey','Machinery','Rolling stands, mill trains, turnkey projects',1],['RollTech Components','China','Spare Parts','Work rolls, backup rolls, guides, bearings',1],['ThermoMill Systems','Italy','Furnaces','Reheating furnaces, burners, heat treatment',0],['Drive & Mill Automation','Germany','Automation','PLC, drives, SCADA, electrical modernization',1],['MillCare Industrial Services','UAE','Services','Installation, commissioning, maintenance',0],['Global Used Mill Exchange','India','Used Machinery','Used rolling mills, stands, motors, gearboxes',0],['Precision Roll Works','India','Spare Parts','Roll manufacturing, machining and grinding',1]];
-function render(){let q=(document.getElementById('q').value||'').toLowerCase(),c=document.getElementById('cat').value,co=document.getElementById('country').value;let a=data.filter(x=>(!q||(x.join(' ').toLowerCase().includes(q)))&&(!c||x[2]===c)&&(!co||x[1]===co));document.getElementById('count').textContent=a.length+' suppliers';document.getElementById('results').innerHTML=a.map(x=>`<article class="supplier"><div><h3>${x[0]} ${x[4]?'✓':''}</h3><p>${x[1]} · ${x[3]}</p><span class="tag">${x[2]}</span><span class="tag">RFQ available</span></div><a class="btn dark" href="index.html#rfq">Send RFQ</a></article>`).join('')||'<p>No matching suppliers yet.</p>'}document.addEventListener('DOMContentLoaded',()=>{let p=new URLSearchParams(location.search);if(p.get('category'))document.getElementById('cat').value=p.get('category');if(localStorage.getItem('q'))document.getElementById('q').value=localStorage.getItem('q');render()});
+const data = [
+  [
+    'G.P. Roll Makers India',
+    'India',
+    'Machinery',
+    'Section mills, structural mills, TMT/rebar mills, wire rod mills, strip mills and turnkey rolling-mill solutions',
+    0
+  ],
+  [
+    'A.S. Precision Machines Pvt. Ltd.',
+    'India',
+    'Machinery',
+    'Rebar mills, section mills, strip mills, merchant bar mills, wire rod mills and rolling-mill equipment',
+    0
+  ],
+  [
+    'J.S Rolling Mill Industries',
+    'India',
+    'Machinery',
+    'Turnkey rolling mills, mill stands, gearboxes, shears, conveyors and quenching systems',
+    0
+  ],
+  [
+    'Laxmi Industries',
+    'India',
+    'Machinery',
+    'Rolling mills, wire rod mills, continuous casting machines, mill stands, rolls and spare parts',
+    0
+  ],
+  [
+    'Avtar Foundry & Workshop',
+    'India',
+    'Machinery',
+    'Rolling mill plants, housingless stands, gearboxes, cooling beds, shears, rolls and mill components',
+    0
+  ],
+  [
+    'Multi Roll Tech',
+    'India',
+    'Machinery',
+    'Section mills, TMT mills, hot-steel mills, wire-rod mills, housingless mills, rolls and gearboxes',
+    0
+  ],
+  [
+    'R.S. Udyog',
+    'India',
+    'Spare Parts',
+    'Rolling-mill rolls, indefinite-chilled rolls, CI rolls and rolling-mill machinery',
+    0
+  ],
+  [
+    'Vimco Rolls Industries',
+    'India',
+    'Spare Parts',
+    'Adamite rolls, alloy-steel-base rolls, SG iron rolls, chilled cast-iron rolls and forged rolls',
+    0
+  ],
+  [
+    'ADK Machines',
+    'Turkey',
+    'Machinery',
+    'Turnkey rolling mills, meltshop technology, machinery, spare parts and commissioning',
+    0
+  ],
+  [
+    'Rana Steel',
+    'Turkey',
+    'Machinery',
+    'Rolling mills, rolling-mill equipment, meltshops and turnkey steel-plant solutions',
+    0
+  ]
+];
