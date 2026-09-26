@@ -103,12 +103,7 @@ function render() {
           </div>
 
          <div>
-  <a
-    class="btn dark"
-    href="company.html?name=${encodeURIComponent(x[0])}"
-  >
-    View Company
-  </a>
+
 
  <a
   class="btn dark"
