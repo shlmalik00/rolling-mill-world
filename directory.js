@@ -102,22 +102,30 @@ function render() {
             <span class="tag">Public Listing</span>
           </div>
 
-          <div>
-            <a
-              class="btn dark"
-              href="${x[4]}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Visit Website
-            </a>
+         <div>
+  <a
+    class="btn dark"
+    href="company.html?name=${encodeURIComponent(x[0])}"
+  >
+    View Company
+  </a>
 
-            <a
-              class="btn dark"
-              href="index.html#rfq"
-            >
-              Send RFQ
-            </a>
+  <a
+    class="btn dark"
+    href="${x[4]}"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    Visit Website
+  </a>
+
+  <a
+    class="btn dark"
+    href="index.html#rfq"
+  >
+    Send RFQ
+  </a>
+</div>
           </div>
         </article>
       `
