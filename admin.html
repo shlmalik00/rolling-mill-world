@@ -235,28 +235,6 @@
 
     <section class="adminCards">
 
-      <div class="adminCard">
-        <small>Suppliers</small>
-        <strong>10</strong>
-      </div>
-
-      <div class="adminCard">
-        <small>Open RFQs</small>
-        <strong>2</strong>
-      </div>
-
-      <div class="adminCard">
-        <small>Quotations</small>
-        <strong>1</strong>
-      </div>
-
-      <div class="adminCard">
-        <small>Public Listings</small>
-        <strong>10</strong>
-      </div>
-
-    </section>
-
 
     <section class="adminPanel">
 
@@ -300,31 +278,56 @@
 <script src="auth.js"></script>
 
 <script>
-  async function checkAdminAccess() {
+  async function loadAdminStats() {
     try {
       const sb = await getSupabaseClient();
 
-      const {
-        data,
-        error
-      } = await sb.auth.getSession();
+      const { count: supplierCount, error: supplierError } =
+        await sb
+          .from('companies')
+          .select('id', {
+            count: 'exact',
+            head: true
+          });
 
-      if (
-        error ||
-        !data.session ||
-        !data.session.user ||
-        data.session.user.email !== 'shlmalik00@gmail.com'
-      ) {
-        window.location.href = 'index.html';
-        return;
-      }
+      if (supplierError) throw supplierError;
+
+      const { count: rfqCount, error: rfqError } =
+        await sb
+          .from('rfqs')
+          .select('id', {
+            count: 'exact',
+            head: true
+          })
+          .eq('status', 'open');
+
+      if (rfqError) throw rfqError;
+
+      const { count: quotationCount, error: quotationError } =
+        await sb
+          .from('quotations')
+          .select('id', {
+            count: 'exact',
+            head: true
+          });
+
+      if (quotationError) throw quotationError;
+
+      document.getElementById('supplierCount').textContent =
+        supplierCount ?? 0;
+
+      document.getElementById('rfqCount').textContent =
+        rfqCount ?? 0;
+
+      document.getElementById('quotationCount').textContent =
+        quotationCount ?? 0;
+
     } catch (err) {
-      console.error('Admin access check failed:', err);
-      window.location.href = 'index.html';
+      console.error('Could not load admin statistics:', err);
     }
   }
 
-  checkAdminAccess();
+  loadAdminStats();
 </script>
 
 </body>
