@@ -296,5 +296,36 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+
+<script>
+  async function checkAdminAccess() {
+    try {
+      const sb = await getSupabaseClient();
+
+      const {
+        data,
+        error
+      } = await sb.auth.getSession();
+
+      if (
+        error ||
+        !data.session ||
+        !data.session.user ||
+        data.session.user.email !== 'shlmalik00@gmail.com'
+      ) {
+        window.location.href = 'index.html';
+        return;
+      }
+    } catch (err) {
+      console.error('Admin access check failed:', err);
+      window.location.href = 'index.html';
+    }
+  }
+
+  checkAdminAccess();
+</script>
+
 </body>
 </html>
