@@ -1,0 +1,361 @@
+<!doctype html>
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
+  <title>Supplier Accounts | Rolling Mill World</title>
+
+  <link
+    rel="stylesheet"
+    href="styles.css"
+  >
+
+  <style>
+
+    .adminPage{
+      padding:35px;
+      background:#f5f8fa;
+      min-height:calc(100vh - 76px);
+    }
+
+    .adminPageHeader{
+      margin-bottom:25px;
+    }
+
+    .adminPageHeader h1{
+      margin:0;
+      font-size:32px;
+    }
+
+    .adminPageHeader p{
+      color:#68747e;
+      margin:6px 0 0;
+    }
+
+    .adminTableWrap{
+      background:#fff;
+      border:1px solid #dfe6eb;
+      border-radius:13px;
+      overflow:auto;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:750px;
+    }
+
+    th,
+    td{
+      padding:14px 16px;
+      text-align:left;
+      border-bottom:1px solid #edf1f4;
+      font-size:14px;
+    }
+
+    th{
+      background:#f7f9fb;
+      color:#52606b;
+      font-size:12px;
+      text-transform:uppercase;
+    }
+
+    tr:last-child td{
+      border-bottom:0;
+    }
+
+    .verified{
+      color:#16834b;
+      font-weight:800;
+    }
+
+    .notVerified{
+      color:#9a6a00;
+      font-weight:800;
+    }
+
+    .empty{
+      padding:25px;
+      color:#68747e;
+    }
+
+    @media(max-width:600px){
+
+      .adminPage{
+        padding:20px;
+      }
+
+      .adminPageHeader h1{
+        font-size:26px;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<header>
+
+  <div class="nav wrap">
+
+    <a
+      class="brand"
+      href="index.html"
+    >
+      <b>RMW</b> Rolling Mill <em>World</em>
+    </a>
+
+    <div class="navActions">
+
+      <a
+        class="btn light"
+        href="admin.html"
+      >
+        Admin Dashboard
+      </a>
+
+      <a
+        class="btn blue"
+        href="index.html"
+      >
+        View Website
+      </a>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<main class="adminPage">
+
+  <div class="adminPageHeader">
+
+    <h1>Supplier Accounts</h1>
+
+    <p>
+      View supplier accounts and their company profiles.
+    </p>
+
+  </div>
+
+
+  <div class="adminTableWrap">
+
+    <div id="status" class="empty">
+      Loading supplier accounts...
+    </div>
+
+    <table id="supplierTable" style="display:none">
+
+      <thead>
+
+        <tr>
+
+          <th>Email</th>
+
+          <th>Company</th>
+
+          <th>Company Email</th>
+
+          <th>Verified</th>
+
+          <th>Account Created</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody id="supplierBody"></tbody>
+
+    </table>
+
+  </div>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="auth.js"></script>
+
+
+<script>
+
+  async function checkAdminAccess(){
+
+    try{
+
+      const sb =
+        await getSupabaseClient();
+
+      const {
+        data,
+        error
+      } =
+        await sb.auth.getSession();
+
+      if(
+        error ||
+        !data.session ||
+        !data.session.user ||
+        data.session.user.email !==
+          'shlmalik00@gmail.com'
+      ){
+
+        window.location.href =
+          'index.html';
+
+        return false;
+
+      }
+
+      return true;
+
+    }catch(err){
+
+      console.error(
+        'Admin access check failed:',
+        err
+      );
+
+      window.location.href =
+        'index.html';
+
+      return false;
+
+    }
+
+  }
+
+
+  async function loadSupplierAccounts(){
+
+    const status =
+      document.getElementById('status');
+
+    const table =
+      document.getElementById('supplierTable');
+
+    const body =
+      document.getElementById('supplierBody');
+
+    try{
+
+      const sb =
+        await getSupabaseClient();
+
+      const {
+        data,
+        error
+      } =
+        await sb.rpc(
+          'get_admin_supplier_accounts'
+        );
+
+      if(error) throw error;
+
+      if(!data || !data.length){
+
+        status.textContent =
+          'No supplier accounts found.';
+
+        return;
+
+      }
+
+      body.innerHTML =
+        data.map(
+          supplier => `
+
+            <tr>
+
+              <td>
+                ${supplier.email || '—'}
+              </td>
+
+              <td>
+                ${supplier.company_name || '—'}
+              </td>
+
+              <td>
+                ${supplier.company_email || '—'}
+              </td>
+
+              <td>
+
+                ${
+                  supplier.verified
+                    ? '<span class="verified">Yes</span>'
+                    : '<span class="notVerified">No</span>'
+                }
+
+              </td>
+
+              <td>
+                ${
+                  supplier.account_created_at
+                    ? new Date(
+                        supplier.account_created_at
+                      ).toLocaleDateString()
+                    : '—'
+                }
+              </td>
+
+            </tr>
+
+          `
+        ).join('');
+
+      status.style.display =
+        'none';
+
+      table.style.display =
+        'table';
+
+    }catch(err){
+
+      console.error(
+        'Could not load supplier accounts:',
+        err
+      );
+
+      status.textContent =
+        err.message ||
+        'Could not load supplier accounts.';
+
+    }
+
+  }
+
+
+  async function init(){
+
+    const allowed =
+      await checkAdminAccess();
+
+    if(!allowed) return;
+
+    await loadSupplierAccounts();
+
+  }
+
+
+  init();
+
+</script>
+
+</body>
+
+</html>
