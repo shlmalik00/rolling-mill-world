@@ -1,0 +1,422 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Manage Buyers | Rolling Mill World</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .adminLayout{
+      display:grid;
+      grid-template-columns:240px 1fr;
+      min-height:calc(100vh - 76px);
+      background:#f5f8fa;
+    }
+
+    .adminSide{
+      background:#142a3f;
+      color:#fff;
+      padding:25px 15px;
+    }
+
+    .adminSide h3{
+      margin:0 10px 25px;
+      font-size:18px;
+    }
+
+    .adminSide a{
+      display:block;
+      padding:11px 12px;
+      margin:4px 0;
+      border-radius:8px;
+      color:#d8e2ea;
+      font-size:14px;
+    }
+
+    .adminSide a:hover,
+    .adminSide a.active{
+      background:#1d405e;
+      color:#fff;
+    }
+
+    .adminMain{
+      padding:35px;
+    }
+
+    .adminHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:20px;
+      margin-bottom:30px;
+    }
+
+    .adminHeader h1{
+      margin:0;
+      font-size:32px;
+    }
+
+    .adminHeader p{
+      margin:5px 0 0;
+      color:#68747e;
+    }
+
+    .buyerTable{
+      background:#fff;
+      border:1px solid #dfe6eb;
+      border-radius:13px;
+      overflow:hidden;
+    }
+
+    .buyerRow{
+      display:grid;
+      grid-template-columns:1.5fr 1.2fr 1fr;
+      gap:15px;
+      padding:18px 20px;
+      border-bottom:1px solid #e8edf1;
+      align-items:center;
+    }
+
+    .buyerRow:last-child{
+      border-bottom:0;
+    }
+
+    .buyerHead{
+      background:#f5f8fa;
+      font-weight:800;
+      color:#53616c;
+      font-size:13px;
+    }
+
+    .buyerRow strong{
+      color:#142a3f;
+    }
+
+    .buyerRow small{
+      color:#68747e;
+    }
+
+    .emptyState{
+      background:#fff;
+      border:1px solid #dfe6eb;
+      border-radius:13px;
+      padding:30px;
+      color:#68747e;
+    }
+
+    @media(max-width:900px){
+
+      .adminLayout{
+        grid-template-columns:1fr;
+      }
+
+      .adminSide{
+        padding:15px;
+      }
+
+      .adminSide a{
+        display:inline-block;
+        margin:2px;
+      }
+
+      .adminMain{
+        padding:25px;
+      }
+
+      .buyerRow{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .buyerHead{
+        display:none;
+      }
+    }
+
+    @media(max-width:520px){
+
+      .adminMain{
+        padding:20px;
+      }
+
+      .adminHeader{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+
+      .buyerRow{
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="nav wrap">
+
+    <a class="brand" href="index.html">
+      <b>RMW</b> Rolling Mill <em>World</em>
+    </a>
+
+    <div class="navActions">
+
+      <a class="btn light" href="admin.html">
+        Dashboard
+      </a>
+
+      <a class="btn blue" href="index.html">
+        View Website
+      </a>
+
+    </div>
+
+  </div>
+</header>
+
+
+<div class="adminLayout">
+
+  <aside class="adminSide">
+
+    <h3>RMW Admin</h3>
+
+    <a href="admin.html">
+      Dashboard
+    </a>
+
+    <a href="admin-suppliers.html">
+      Suppliers
+    </a>
+
+    <a href="admin-rfqs.html">
+      RFQs
+    </a>
+
+    <a href="admin-quotations.html">
+      Quotations
+    </a>
+
+    <a class="active" href="admin-buyers.html">
+      Buyers
+    </a>
+
+    <a href="supplier.html">
+      Supplier Accounts
+    </a>
+
+    <a href="about.html">
+      Pages
+    </a>
+
+    <a href="index.html">
+      Settings
+    </a>
+
+  </aside>
+
+
+  <main class="adminMain">
+
+    <div class="adminHeader">
+
+      <div>
+
+        <h1>Buyers</h1>
+
+        <p>
+          View registered Rolling Mill World accounts.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div id="buyerResults">
+
+      <div class="emptyState">
+        Loading buyers...
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+
+
+<script>
+
+async function checkAdminAccess() {
+
+  try {
+
+    const sb =
+      await getSupabaseClient();
+
+    const {
+      data,
+      error
+    } = await sb.auth.getSession();
+
+    if (
+      error ||
+      !data.session ||
+      !data.session.user ||
+      data.session.user.email !== 'shlmalik00@gmail.com'
+    ) {
+
+      window.location.href =
+        'index.html';
+
+      return false;
+    }
+
+    return true;
+
+  } catch (err) {
+
+    console.error(
+      'Admin access check failed:',
+      err
+    );
+
+    window.location.href =
+      'index.html';
+
+    return false;
+  }
+}
+
+
+async function loadBuyers() {
+
+  const allowed =
+    await checkAdminAccess();
+
+  if (!allowed) return;
+
+  const results =
+    document.getElementById(
+      'buyerResults'
+    );
+
+  try {
+
+    const sb =
+      await getSupabaseClient();
+
+    const {
+      data,
+      error
+    } = await sb.rpc(
+      'get_admin_buyers'
+    );
+
+    if (error) throw error;
+
+
+    if (!data || !data.length) {
+
+      results.innerHTML = `
+        <div class="emptyState">
+          No buyer accounts found.
+        </div>
+      `;
+
+      return;
+    }
+
+
+    results.innerHTML = `
+
+      <div class="buyerTable">
+
+        <div class="buyerRow buyerHead">
+
+          <div>Email</div>
+          <div>Account ID</div>
+          <div>Created</div>
+
+        </div>
+
+
+        ${data.map(
+          buyer => `
+
+            <div class="buyerRow">
+
+              <div>
+
+                <strong>
+                  ${buyer.email || '—'}
+                </strong>
+
+              </div>
+
+
+              <div>
+
+                <small>
+                  ${buyer.id || '—'}
+                </small>
+
+              </div>
+
+
+              <div>
+
+                <small>
+                  ${
+                    buyer.created_at
+                      ? new Date(
+                          buyer.created_at
+                        ).toLocaleDateString()
+                      : '—'
+                  }
+                </small>
+
+              </div>
+
+            </div>
+
+          `
+        ).join('')}
+
+      </div>
+
+    `;
+
+  } catch (err) {
+
+    console.error(
+      'Could not load buyers:',
+      err
+    );
+
+    results.innerHTML = `
+
+      <div class="emptyState">
+
+        Could not load buyers.
+
+      </div>
+
+    `;
+  }
+}
+
+
+loadBuyers();
+
+</script>
+
+</body>
+</html>
