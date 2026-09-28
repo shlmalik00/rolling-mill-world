@@ -282,53 +282,53 @@
 
 <script>
   async function loadAdminStats() {
-    try {
-      const sb = await getSupabaseClient();
+  try {
 
-      const { count: supplierCount, error: supplierError } =
-        await sb
-          .from('companies')
-          .select('id', {
-            count: 'exact',
-            head: true
-          });
+    const sb =
+      await getSupabaseClient();
 
-      if (supplierError) throw supplierError;
+    const {
+      data,
+      error
+    } =
+      await sb.rpc(
+        'get_admin_stats'
+      );
 
-      const { count: rfqCount, error: rfqError } =
-        await sb
-          .from('rfqs')
-          .select('id', {
-            count: 'exact',
-            head: true
-          })
-          .eq('status', 'open');
+    if (error) throw error;
 
-      if (rfqError) throw rfqError;
-
-      const { count: quotationCount, error: quotationError } =
-        await sb
-          .from('quotations')
-          .select('id', {
-            count: 'exact',
-            head: true
-          });
-
-      if (quotationError) throw quotationError;
-
-      document.getElementById('supplierCount').textContent =
-        supplierCount ?? 0;
-
-      document.getElementById('rfqCount').textContent =
-        rfqCount ?? 0;
-
-      document.getElementById('quotationCount').textContent =
-        quotationCount ?? 0;
-
-    } catch (err) {
-      console.error('Could not load admin statistics:', err);
+    if (!data || !data.length) {
+      throw new Error(
+        'No admin statistics returned.'
+      );
     }
+
+    const stats = data[0];
+
+    document.getElementById(
+      'supplierCount'
+    ).textContent =
+      stats.supplier_count ?? 0;
+
+    document.getElementById(
+      'rfqCount'
+    ).textContent =
+      stats.open_rfq_count ?? 0;
+
+    document.getElementById(
+      'quotationCount'
+    ).textContent =
+      stats.quotation_count ?? 0;
+
+  } catch (err) {
+
+    console.error(
+      'Could not load admin statistics:',
+      err
+    );
+
   }
+}
 
   loadAdminStats();
 </script>
