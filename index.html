@@ -73,49 +73,90 @@
     text-align:center;
   }
 
+  /* TABLET / MOBILE */
   @media(max-width:700px){
 
     .rmwHomeHero{
-      min-height:620px;
+      min-height:650px;
+      align-items:flex-start;
       background:
         linear-gradient(
-          90deg,
-          rgba(8,22,36,.94),
-          rgba(8,22,36,.72)
+          180deg,
+          rgba(8,22,36,.88) 0%,
+          rgba(8,22,36,.82) 48%,
+          rgba(8,22,36,.58) 100%
         ),
         url('rolling-mill-hero-wallpaper.png')
         center center / cover no-repeat;
     }
 
     .rmwHeroContent{
-      padding:70px 0 60px;
+      max-width:100%;
+      padding:85px 20px 55px;
+    }
+
+    .rmwHeroContent label{
+      display:block;
+      font-size:12px;
+      line-height:1.5;
+      letter-spacing:1.4px;
     }
 
     .rmwHeroContent h1{
-      font-size:42px;
+      margin:16px 0;
+      font-size:43px;
+      line-height:1.08;
     }
 
     .rmwHeroContent p{
+      max-width:100%;
       font-size:16px;
+      line-height:1.6;
     }
 
+    .rmwHeroButtons{
+      margin-top:24px;
+      gap:12px;
+    }
+
+    .rmwHeroButtons .btn{
+      min-width:145px;
+      padding:13px 18px;
+    }
   }
 
+  /* SMALL PHONES */
   @media(max-width:480px){
 
+    .rmwHomeHero{
+      min-height:690px;
+      background-position:center center;
+    }
+
+    .rmwHeroContent{
+      padding:72px 18px 45px;
+    }
+
     .rmwHeroContent h1{
-      font-size:35px;
+      font-size:36px;
+      line-height:1.08;
+    }
+
+    .rmwHeroContent p{
+      font-size:15px;
+      line-height:1.55;
     }
 
     .rmwHeroButtons{
       flex-direction:column;
-      align-items:stretch;
+      width:100%;
     }
 
     .rmwHeroButtons .btn{
       width:100%;
+      box-sizing:border-box;
+      text-align:center;
     }
-
   }
 </style>
 
