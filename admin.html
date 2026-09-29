@@ -1,12 +1,112 @@
 <!doctype html>
 <html>
+
 <head>
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
   <title>Admin Dashboard | Rolling Mill World</title>
-  <link rel="stylesheet" href="styles.css">
+
+  <link
+    rel="stylesheet"
+    href="styles.css"
+  >
 
   <style>
+
+    /* =========================
+       ADMIN LOGIN
+    ========================= */
+
+    .adminLoginPage{
+      min-height:calc(100vh - 76px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:30px 20px;
+      background:#f5f8fa;
+    }
+
+    .adminLoginCard{
+      width:100%;
+      max-width:430px;
+      background:#fff;
+      border:1px solid #dfe6eb;
+      border-radius:16px;
+      padding:35px;
+      box-shadow:0 12px 35px rgba(20,42,63,.08);
+    }
+
+    .adminLoginCard h1{
+      margin:10px 0;
+      color:#142a3f;
+      font-size:30px;
+    }
+
+    .adminLoginCard p{
+      color:#68747e;
+      line-height:1.6;
+    }
+
+    .adminLoginCard label{
+      display:block;
+      margin-top:18px;
+      margin-bottom:7px;
+      font-size:13px;
+      font-weight:800;
+      color:#142a3f;
+    }
+
+    .adminLoginCard input{
+      width:100%;
+      box-sizing:border-box;
+      padding:13px 14px;
+      border:1px solid #dfe6eb;
+      border-radius:8px;
+      font-size:15px;
+      background:#fff;
+    }
+
+    .adminLoginCard input:focus{
+      outline:none;
+      border-color:#1476d2;
+      box-shadow:0 0 0 3px rgba(20,118,210,.10);
+    }
+
+    .adminLoginButton{
+      width:100%;
+      margin-top:22px;
+    }
+
+    .adminLoginMsg{
+      min-height:20px;
+      margin-top:15px;
+      color:#c0392b;
+      font-size:14px;
+    }
+
+    .adminLoginNote{
+      margin-top:20px;
+      padding-top:18px;
+      border-top:1px solid #edf0f2;
+      font-size:12px;
+      color:#7a858d;
+    }
+
+
+    /* =========================
+       ADMIN DASHBOARD
+    ========================= */
+
+    #adminDashboard{
+      display:none;
+    }
+
     .adminLayout{
       display:grid;
       grid-template-columns:240px 1fr;
@@ -60,6 +160,12 @@
     .adminHeader p{
       margin:5px 0 0;
       color:#68747e;
+    }
+
+    .adminHeaderActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
     }
 
     .adminCards{
@@ -116,7 +222,13 @@
       color:#1476d2;
     }
 
+
+    /* =========================
+       MOBILE
+    ========================= */
+
     @media(max-width:900px){
+
       .adminLayout{
         grid-template-columns:1fr;
       }
@@ -137,9 +249,16 @@
       .adminQuick{
         grid-template-columns:1fr 1fr;
       }
+
     }
 
+
     @media(max-width:520px){
+
+      .adminLoginCard{
+        padding:25px 20px;
+      }
+
       .adminMain{
         padding:20px;
       }
@@ -153,185 +272,803 @@
         align-items:flex-start;
         flex-direction:column;
       }
+
+      .adminHeaderActions{
+        width:100%;
+      }
+
+      .adminHeaderActions .btn{
+        width:100%;
+        text-align:center;
+      }
+
     }
+
   </style>
+
 </head>
+
 
 <body>
 
+
+<!-- =========================
+     TOP HEADER
+========================= -->
+
 <header>
+
   <div class="nav wrap">
 
-    <a class="brand" href="index.html">
+    <a
+      class="brand"
+      href="index.html"
+    >
       <b>RMW</b> Rolling Mill <em>World</em>
     </a>
 
     <div class="navActions">
-      <a class="btn light" href="index.html">
+
+      <a
+        class="btn light"
+        href="index.html"
+      >
         View Website
       </a>
+
     </div>
 
   </div>
+
 </header>
 
 
-<div class="adminLayout">
 
-  <aside class="adminSide">
+<!-- =========================
+     ADMIN LOGIN
+========================= -->
 
-    <h3>RMW Admin</h3>
+<section
+  id="adminLoginPage"
+  class="adminLoginPage"
+>
 
-    <a class="active" href="admin.html">
-      Dashboard
-    </a>
+  <div class="adminLoginCard">
 
-   <a href="directory.html">
-  Suppliers
-</a>
+    <label>
+      ROLLING MILL WORLD
+    </label>
 
-  <a href="admin-rfqs.html">
-  RFQs
-</a>
+    <h1>
+      Admin Login
+    </h1>
 
-  <a href="admin-rfqs.html">
-  📋 View RFQs
-</a>
-
-   <a href="admin-buyers.html">
-  Buyers
-</a>
-<a href="admin-buyers.html">
-  👤 View Buyers
-</a>
-    <a href="admin-supplier-accounts.html">
-  Supplier Accounts
-</a>
-<a href="admin-supplier-accounts.html">
-  🏭 Supplier Accounts
-</a>
-    <a href="about.html">
-      Pages
-    </a>
-
-    <a href="index.html">
-      Settings
-    </a>
-
-  </aside>
+    <p>
+      Sign in to access the Rolling Mill World administration dashboard.
+    </p>
 
 
-  <main class="adminMain">
+    <form id="adminLoginForm">
 
-    <div class="adminHeader">
+      <label for="adminEmail">
+        Admin email
+      </label>
 
-      <div>
-        <h1>Dashboard</h1>
-        <p>Manage Rolling Mill World from one place.</p>
-      </div>
+      <input
+        id="adminEmail"
+        type="email"
+        required
+        autocomplete="username"
+        placeholder="Admin email"
+      >
 
-      <a class="btn blue" href="supplier.html">
-        Add Supplier
-      </a>
 
+      <label for="adminPassword">
+        Password
+      </label>
+
+      <input
+        id="adminPassword"
+        type="password"
+        required
+        autocomplete="current-password"
+        placeholder="Password"
+      >
+
+
+      <button
+        id="adminLoginButton"
+        class="btn blue adminLoginButton"
+        type="submit"
+      >
+        Sign in to Admin
+      </button>
+
+
+      <div
+        id="adminLoginMsg"
+        class="adminLoginMsg"
+      ></div>
+
+    </form>
+
+
+    <div class="adminLoginNote">
+      Authorized administration access only.
     </div>
-
-
-    <section class="adminCards">
-
-
-   <section class="adminPanel">
-
-  <h2>Quick Actions</h2>
-
-  <div class="adminQuick">
-
-    <a href="admin-suppliers.html">
-  👥 Manage Suppliers
-</a>
-    <a href="supplier.html">
-      ➕ Add Supplier
-    </a>
-
-   <a href="admin-rfqs.html">
-  📋 View RFQs
-</a>
-
-    <a href="admin-quotations.html">
-      💬 View Quotations
-    </a>
-
-    <a href="about.html">
-      📄 Manage Pages
-    </a>
-
-    <a href="index.html">
-      🌐 View Website
-    </a>
 
   </div>
 
 </section>
 
-  </main>
+
+
+<!-- =========================
+     ADMIN DASHBOARD
+========================= -->
+
+<div
+  id="adminDashboard"
+>
+
+  <div class="adminLayout">
+
+
+    <!-- SIDEBAR -->
+
+    <aside class="adminSide">
+
+      <h3>
+        RMW Admin
+      </h3>
+
+
+      <a
+        class="active"
+        href="admin.html"
+      >
+        Dashboard
+      </a>
+
+
+      <a
+        href="admin-suppliers.html"
+      >
+        Suppliers
+      </a>
+
+
+      <a
+        href="admin-rfqs.html"
+      >
+        RFQs
+      </a>
+
+
+      <a
+        href="admin-quotations.html"
+      >
+        Quotations
+      </a>
+
+
+      <a
+        href="admin-buyers.html"
+      >
+        Buyers
+      </a>
+
+
+      <a
+        href="admin-supplier-accounts.html"
+      >
+        Supplier Accounts
+      </a>
+
+
+      <a
+        href="about.html"
+      >
+        Pages
+      </a>
+
+
+      <a
+        href="index.html"
+      >
+        Settings
+      </a>
+
+    </aside>
+
+
+
+    <!-- MAIN -->
+
+    <main class="adminMain">
+
+
+      <div class="adminHeader">
+
+        <div>
+
+          <h1>
+            Dashboard
+          </h1>
+
+          <p>
+            Manage Rolling Mill World from one place.
+          </p>
+
+        </div>
+
+
+        <div class="adminHeaderActions">
+
+          <a
+            class="btn blue"
+            href="supplier.html"
+          >
+            Add Supplier
+          </a>
+
+          <button
+            class="btn light"
+            type="button"
+            onclick="adminSignOut()"
+          >
+            Sign out
+          </button>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- STATISTICS -->
+
+      <section class="adminCards">
+
+
+        <div class="adminCard">
+
+          <small>
+            Suppliers
+          </small>
+
+          <strong id="supplierCount">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="adminCard">
+
+          <small>
+            Open RFQs
+          </small>
+
+          <strong id="rfqCount">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="adminCard">
+
+          <small>
+            Quotations
+          </small>
+
+          <strong id="quotationCount">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="adminCard">
+
+          <small>
+            Public Listings
+          </small>
+
+          <strong>
+            10
+          </strong>
+
+        </div>
+
+
+      </section>
+
+
+
+      <!-- QUICK ACTIONS -->
+
+      <section class="adminPanel">
+
+        <h2>
+          Quick Actions
+        </h2>
+
+
+        <div class="adminQuick">
+
+
+          <a href="admin-suppliers.html">
+            👥 Manage Suppliers
+          </a>
+
+
+          <a href="supplier.html">
+            ➕ Add Supplier
+          </a>
+
+
+          <a href="admin-rfqs.html">
+            📋 View RFQs
+          </a>
+
+
+          <a href="admin-quotations.html">
+            💬 View Quotations
+          </a>
+
+
+          <a href="admin-buyers.html">
+            👤 View Buyers
+          </a>
+
+
+          <a href="admin-supplier-accounts.html">
+            🏭 Supplier Accounts
+          </a>
+
+
+          <a href="about.html">
+            📄 Manage Pages
+          </a>
+
+
+          <a href="index.html">
+            🌐 View Website
+          </a>
+
+
+        </div>
+
+      </section>
+
+
+    </main>
+
+  </div>
 
 </div>
 
+
+
+<!-- =========================
+     SUPABASE
+========================= -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="auth.js"></script>
 
+
 <script>
-  async function loadAdminStats() {
-  try {
 
-    const sb =
-      await getSupabaseClient();
 
-    const {
-      data,
-      error
-    } =
-      await sb.rpc(
-        'get_admin_stats'
-      );
+  /* =========================
+     ADMIN SETTINGS
+  ========================= */
 
-    if (error) throw error;
+  const ADMIN_EMAIL =
+    'shlmalik00@gmail.com';
 
-    if (!data || !data.length) {
-      throw new Error(
-        'No admin statistics returned.'
-      );
-    }
 
-    const stats = data[0];
 
+  /* =========================
+     ELEMENTS
+  ========================= */
+
+  const loginPage =
     document.getElementById(
-      'supplierCount'
-    ).textContent =
-      stats.supplier_count ?? 0;
-
-    document.getElementById(
-      'rfqCount'
-    ).textContent =
-      stats.open_rfq_count ?? 0;
-
-    document.getElementById(
-      'quotationCount'
-    ).textContent =
-      stats.quotation_count ?? 0;
-
-  } catch (err) {
-
-    console.error(
-      'Could not load admin statistics:',
-      err
+      'adminLoginPage'
     );
 
-  }
-}
+  const dashboard =
+    document.getElementById(
+      'adminDashboard'
+    );
 
-  loadAdminStats();
+  const loginForm =
+    document.getElementById(
+      'adminLoginForm'
+    );
+
+  const loginButton =
+    document.getElementById(
+      'adminLoginButton'
+    );
+
+  const loginMsg =
+    document.getElementById(
+      'adminLoginMsg'
+    );
+
+
+
+  /* =========================
+     SHOW DASHBOARD
+  ========================= */
+
+  function showAdminDashboard(){
+
+    loginPage.style.display =
+      'none';
+
+    dashboard.style.display =
+      'block';
+
+    loadAdminStats();
+
+  }
+
+
+
+  /* =========================
+     SHOW LOGIN
+  ========================= */
+
+  function showAdminLogin(){
+
+    loginPage.style.display =
+      'flex';
+
+    dashboard.style.display =
+      'none';
+
+  }
+
+
+
+  /* =========================
+     CHECK CURRENT SESSION
+  ========================= */
+
+  async function checkAdminSession(){
+
+    try{
+
+      const sb =
+        await getSupabaseClient();
+
+
+      const {
+        data,
+        error
+      } =
+        await sb.auth.getSession();
+
+
+      if(error){
+
+        throw error;
+
+      }
+
+
+      const user =
+        data &&
+        data.session &&
+        data.session.user;
+
+
+      if(!user){
+
+        showAdminLogin();
+
+        return;
+
+      }
+
+
+      if(
+        user.email !==
+        ADMIN_EMAIL
+      ){
+
+        await sb.auth.signOut();
+
+        showAdminLogin();
+
+        loginMsg.textContent =
+          'This account is not authorized for admin access.';
+
+        return;
+
+      }
+
+
+      showAdminDashboard();
+
+
+    }catch(err){
+
+      console.error(
+        'Admin session check failed:',
+        err
+      );
+
+      showAdminLogin();
+
+    }
+
+  }
+
+
+
+  /* =========================
+     ADMIN LOGIN
+  ========================= */
+
+  loginForm.addEventListener(
+    'submit',
+    async function(e){
+
+      e.preventDefault();
+
+
+      loginMsg.textContent =
+        '';
+
+
+      const email =
+        document
+          .getElementById(
+            'adminEmail'
+          )
+          .value
+          .trim();
+
+
+      const password =
+        document
+          .getElementById(
+            'adminPassword'
+          )
+          .value;
+
+
+      if(
+        email.toLowerCase() !==
+        ADMIN_EMAIL.toLowerCase()
+      ){
+
+        loginMsg.textContent =
+          'Only the authorized admin account can access this dashboard.';
+
+        return;
+
+      }
+
+
+      loginButton.disabled =
+        true;
+
+      loginButton.textContent =
+        'Signing in…';
+
+
+      try{
+
+        const sb =
+          await getSupabaseClient();
+
+
+        const {
+          data,
+          error
+        } =
+          await sb.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
+
+
+        if(error){
+
+          throw error;
+
+        }
+
+
+        if(
+          !data ||
+          !data.user
+        ){
+
+          throw new Error(
+            'Admin login failed.'
+          );
+
+        }
+
+
+        if(
+          data.user.email !==
+          ADMIN_EMAIL
+        ){
+
+          await sb.auth.signOut();
+
+          throw new Error(
+            'This account is not authorized for admin access.'
+          );
+
+        }
+
+
+        document
+          .getElementById(
+            'adminPassword'
+          )
+          .value =
+            '';
+
+
+        showAdminDashboard();
+
+
+      }catch(err){
+
+        console.error(
+          'Admin login failed:',
+          err
+        );
+
+        loginMsg.textContent =
+          err.message ||
+          'Could not sign in.';
+
+
+      }finally{
+
+        loginButton.disabled =
+          false;
+
+        loginButton.textContent =
+          'Sign in to Admin';
+
+      }
+
+    }
+  );
+
+
+
+  /* =========================
+     ADMIN SIGN OUT
+  ========================= */
+
+  async function adminSignOut(){
+
+    try{
+
+      const sb =
+        await getSupabaseClient();
+
+      await sb.auth.signOut();
+
+      showAdminLogin();
+
+      loginMsg.textContent =
+        'You have been signed out.';
+
+
+    }catch(err){
+
+      console.error(
+        'Admin sign out failed:',
+        err
+      );
+
+    }
+
+  }
+
+
+
+  /* =========================
+     LIVE ADMIN STATISTICS
+  ========================= */
+
+  async function loadAdminStats(){
+
+    try{
+
+      const sb =
+        await getSupabaseClient();
+
+
+      const {
+        data,
+        error
+      } =
+        await sb.rpc(
+          'get_admin_stats'
+        );
+
+
+      if(error){
+
+        throw error;
+
+      }
+
+
+      if(
+        !data ||
+        !data.length
+      ){
+
+        throw new Error(
+          'No admin statistics returned.'
+        );
+
+      }
+
+
+      const stats =
+        data[0];
+
+
+      document.getElementById(
+        'supplierCount'
+      ).textContent =
+        stats.supplier_count ?? 0;
+
+
+      document.getElementById(
+        'rfqCount'
+      ).textContent =
+        stats.open_rfq_count ?? 0;
+
+
+      document.getElementById(
+        'quotationCount'
+      ).textContent =
+        stats.quotation_count ?? 0;
+
+
+    }catch(err){
+
+      console.error(
+        'Could not load admin statistics:',
+        err
+      );
+
+    }
+
+  }
+
+
+
+  /* =========================
+     START
+  ========================= */
+
+  checkAdminSession();
+
+
 </script>
 
 </body>
+
 </html>
