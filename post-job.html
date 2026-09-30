@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -12,27 +11,28 @@
 
 <header>
   <div class="nav wrap">
+
     <a class="brand" href="index.html">
       <b>RMW</b> Rolling Mill <em>World</em>
     </a>
 
-<nav>
-  <a href="index.html#categories">Categories</a>
-  <a href="directory.html">Suppliers</a>
-  <a href="index.html#rfq">Post RFQ</a>
-  <a href="job-seeker.html">Careers</a>
-  <a href="post-job.html">Jobs / Find Jobs</a>
-</nav>
+    <nav>
+      <a href="index.html#categories">Categories</a>
+      <a href="directory.html">Suppliers</a>
+      <a href="index.html#rfq">Post RFQ</a>
+      <a href="job-seeker.html">Careers</a>
+      <a href="jobs.html">Jobs / Find Jobs</a>
+    </nav>
 
-
-<a class="btn blue" href="account.html">My Account</a>
+    <a class="btn blue" href="account.html">My Account</a>
 
   </div>
 </header>
 
+
 <main class="section wrap">
 
-<label>RMW CAREERS</label>
+  <label>RMW CAREERS</label>
 
   <h1>Post a Job</h1>
 
@@ -41,182 +41,233 @@
     operations.
   </p>
 
-  <!-- Sign-in gate -->
+
+  <!-- SIGN-IN GATE -->
 
   <section id="jobLoginGate" class="card">
 
+    <h2>Sign in to post a job</h2>
 
-<h2>Sign in to post a job</h2>
+    <p>
+      Employers must sign in before creating a job listing.
+    </p>
 
-<p>
-  Employers must sign in before creating a job listing.
-</p>
+    <button
+      type="button"
+      class="btn blue"
+      onclick="openAuth('login')"
+    >
+      Sign In
+    </button>
 
-<button
-  type="button"
-  class="btn blue"
-  onclick="openAuth('login')"
->
-  Sign In
-</button>
+    <p>
+      Don't have an account?
 
-<p>
-  Don't have an account?
-  <button
-    type="button"
-    class="btn dark"
-    onclick="openAuth('signup')"
+      <button
+        type="button"
+        class="btn dark"
+        onclick="openAuth('signup')"
+      >
+        Create Account
+      </button>
+    </p>
+
+  </section>
+
+
+  <!-- JOB FORM -->
+
+  <section
+    id="jobFormSection"
+    style="display:none;"
   >
-    Create Account
-  </button>
-</p>
+
+    <div id="jobMsg"></div>
+
+    <form id="postJobForm">
+
+      <section class="card">
+
+        <h2>Job Information</h2>
+
+        <div class="form-grid">
+
+          <div>
+            <label for="title">Job title *</label>
+
+            <input
+              id="title"
+              type="text"
+              required
+              placeholder="e.g. Rolling Mill Maintenance Engineer"
+            >
+          </div>
 
 
-  </section>
+          <div>
+            <label for="companyName">Company name *</label>
 
-  <!-- Job form -->
+            <input
+              id="companyName"
+              type="text"
+              required
+              placeholder="Your company name"
+            >
+          </div>
 
-  <section id="jobFormSection" style="display:none;">
+
+          <div>
+            <label for="location">Job location</label>
+
+            <input
+              id="location"
+              type="text"
+              placeholder="City, State / Region"
+            >
+          </div>
 
 
-<div id="jobMsg"></div>
+          <div>
+            <label for="country">Country</label>
 
-<form id="postJobForm">
+            <input
+              id="country"
+              type="text"
+              placeholder="India"
+            >
+          </div>
 
-  <section class="card">
 
-    <h2>Job Information</h2>
+          <div>
+            <label for="employmentType">Employment type</label>
 
-    <div class="form-grid">
+            <select id="employmentType">
 
-      <div>
-        <label for="title">Job title *</label>
-        <input
-          id="title"
-          type="text"
-          required
-          placeholder="e.g. Rolling Mill Maintenance Engineer"
-        >
-      </div>
+              <option value="">Select</option>
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Contract">Contract</option>
+              <option value="Temporary">Temporary</option>
+              <option value="Internship">Internship</option>
 
-      <div>
-        <label for="companyName">Company name *</label>
-        <input
-          id="companyName"
-          type="text"
-          required
-          placeholder="Your company name"
-        >
-      </div>
+            </select>
+          </div>
 
-      <div>
-        <label for="location">Job location</label>
-        <input
-          id="location"
-          type="text"
-          placeholder="City, State / Region"
-        >
-      </div>
 
-      <div>
-        <label for="country">Country</label>
-        <input
-          id="country"
-          type="text"
-          placeholder="India"
-        >
-      </div>
+          <div>
+            <label for="experienceRequired">
+              Experience required
+            </label>
 
-      <div>
-        <label for="employmentType">Employment type</label>
-        <select id="employmentType">
-          <option value="">Select</option>
-          <option value="Full-time">Full-time</option>
-          <option value="Part-time">Part-time</option>
-          <option value="Contract">Contract</option>
-          <option value="Temporary">Temporary</option>
-          <option value="Internship">Internship</option>
-        </select>
-      </div>
+            <input
+              id="experienceRequired"
+              type="text"
+              placeholder="e.g. 5–10 years"
+            >
+          </div>
 
-      <div>
-        <label for="experienceRequired">Experience required</label>
-        <input
-          id="experienceRequired"
-          type="text"
-          placeholder="e.g. 5–10 years"
-        >
-      </div>
+        </div>
 
-    </div>
 
-    <div>
-      <label for="description">Job description *</label>
-      <textarea
-        id="description"
-        rows="7"
-        required
-        placeholder="Describe the position, responsibilities and requirements..."
-      ></textarea>
-    </div>
+        <div>
 
-  </section>
+          <label for="description">
+            Job description *
+          </label>
 
-  <section class="card">
+          <textarea
+            id="description"
+            rows="7"
+            required
+            placeholder="Describe the position, responsibilities and requirements..."
+          ></textarea>
 
-    <h2>Requirements</h2>
+        </div>
 
-    <div class="form-grid">
+      </section>
 
-      <div>
-        <label for="skillsRequired">Skills required</label>
-        <textarea
-          id="skillsRequired"
-          rows="5"
-          placeholder="Rolling mill operation, PLC, electrical maintenance..."
-        ></textarea>
-      </div>
 
-      <div>
-        <label for="salaryRange">Salary range</label>
-        <input
-          id="salaryRange"
-          type="text"
-          placeholder="e.g. USD 1,500–2,500/month"
-        >
-      </div>
+      <section class="card">
 
-      <div>
-        <label for="accommodation">Accommodation</label>
-        <select id="accommodation">
-          <option value="">Select</option>
-          <option value="Provided">Provided</option>
-          <option value="Not provided">Not provided</option>
-          <option value="Negotiable">Negotiable</option>
-        </select>
-      </div>
+        <h2>Requirements</h2>
 
-      <div>
-        <label for="applicationDeadline">Application deadline</label>
-        <input
-          id="applicationDeadline"
-          type="date"
-        >
-      </div>
+        <div class="form-grid">
 
-    </div>
+          <div>
 
-  </section>
+            <label for="skillsRequired">
+              Skills required
+            </label>
 
-  <button
-    class="btn blue"
-    type="submit"
-    id="postJobButton"
-  >
-    Post Job
-  </button>
+            <textarea
+              id="skillsRequired"
+              rows="5"
+              placeholder="Rolling mill operation, PLC, electrical maintenance..."
+            ></textarea>
 
-</form>
+          </div>
+
+
+          <div>
+
+            <label for="salaryRange">
+              Salary range
+            </label>
+
+            <input
+              id="salaryRange"
+              type="text"
+              placeholder="e.g. USD 1,500–2,500/month"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label for="accommodation">
+              Accommodation
+            </label>
+
+            <select id="accommodation">
+
+              <option value="">Select</option>
+              <option value="Provided">Provided</option>
+              <option value="Not provided">Not provided</option>
+              <option value="Negotiable">Negotiable</option>
+
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label for="applicationDeadline">
+              Application deadline
+            </label>
+
+            <input
+              id="applicationDeadline"
+              type="date"
+            >
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <button
+        class="btn blue"
+        type="submit"
+        id="postJobButton"
+      >
+        Post Job
+      </button>
+
+    </form>
 
   </section>
 
@@ -224,97 +275,135 @@
 
 
 <footer>
+
   <div class="wrap">
-    <small>© 2026 Rolling Mill World</small>
+
+    <small>
+      © 2026 Rolling Mill World
+    </small>
+
   </div>
+
 </footer>
 
-  <div id="authModal" class="authModal">
+
+<!-- AUTH MODAL -->
+
+<div
+  id="authModal"
+  class="authModal"
+>
 
   <div class="authBox">
 
-<button
-  type="button"
-  class="authClose"
-  onclick="closeAuth()"
->
-  ×
-</button>
+    <button
+      type="button"
+      class="authClose"
+      onclick="closeAuth()"
+    >
+      ×
+    </button>
 
-<h2 id="authTitle">Welcome back</h2>
 
-<p id="authSubtitle">
-  Sign in to your Rolling Mill World account.
-</p>
+    <h2 id="authTitle">
+      Welcome back
+    </h2>
 
-<div id="authMsg" class="authMsg"></div>
 
-<form id="authForm">
+    <p id="authSubtitle">
+      Sign in to your Rolling Mill World account.
+    </p>
 
-  <input
-    type="hidden"
-    id="authMode"
-    value="login"
-  >
 
-  <label
-    id="authNameLabel"
-    for="authName"
-    style="display:none;"
-  >
-    Full name
-  </label>
+    <div
+      id="authMsg"
+      class="authMsg"
+    ></div>
 
-  <input
-    id="authName"
-    type="text"
-    placeholder="Your full name"
-    style="display:none;"
-  >
 
-  <label for="authEmail">Email</label>
+    <form id="authForm">
 
-  <input
-    id="authEmail"
-    type="email"
-    required
-    placeholder="you@example.com"
-  >
+      <input
+        type="hidden"
+        id="authMode"
+        value="login"
+      >
 
-  <label for="authPassword">Password</label>
 
-  <input
-    id="authPassword"
-    type="password"
-    required
-    minlength="6"
-    placeholder="Your password"
-  >
+      <label
+        id="authNameLabel"
+        for="authName"
+        style="display:none;"
+      >
+        Full name
+      </label>
 
-  <button
-    class="btn blue"
-    type="submit"
-    id="authSubmit"
-  >
-    Sign in
-  </button>
 
-</form>
+      <input
+        id="authName"
+        type="text"
+        placeholder="Your full name"
+        style="display:none;"
+      >
 
-<div id="authToggle">
-  New to Rolling Mill World?
-  <button
-    type="button"
-    onclick="setAuthMode('signup')"
-  >
-    Create an account
-  </button>
-</div>
+
+      <label for="authEmail">
+        Email
+      </label>
+
+
+      <input
+        id="authEmail"
+        type="email"
+        required
+        placeholder="you@example.com"
+      >
+
+
+      <label for="authPassword">
+        Password
+      </label>
+
+
+      <input
+        id="authPassword"
+        type="password"
+        required
+        minlength="6"
+        placeholder="Your password"
+      >
+
+
+      <button
+        class="btn blue"
+        type="submit"
+        id="authSubmit"
+      >
+        Sign in
+      </button>
+
+    </form>
+
+
+    <div id="authToggle">
+
+      New to Rolling Mill World?
+
+      <button
+        type="button"
+        onclick="setAuthMode('signup')"
+      >
+        Create an account
+      </button>
+
+    </div>
 
   </div>
 
 </div>
 
+
+<!-- SCRIPTS -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
