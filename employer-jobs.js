@@ -404,6 +404,14 @@ async function loadEmployerJobs() {
                     >
                       View Public Job
                     </a>
+                  
+<a
+  class="btn blue"
+  href="employer-applicants.html?id=${encodeURIComponent(job.id)}"
+>
+  View Applicants
+</a>
+
                   `
                   : ''
               }
