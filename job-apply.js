@@ -12,21 +12,21 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-function showStatus(message, type = 'error') {
-  const box = document.getElementById('statusMessage');
-
-  if (!box) return;
-
-  box.textContent = message;
-  box.className = `status-message show ${type}`;
-}
-
 function getJobId() {
   const params = new URLSearchParams(window.location.search);
   return params.get('id');
 }
 
-function showApplicationContent() {
+function showStatus(message, type) {
+  const box = document.getElementById('statusMessage');
+
+  if (!box) return;
+
+  box.textContent = message;
+  box.className = 'status-message show ' + (type || 'error');
+}
+
+function showContent() {
   const loading = document.getElementById('loadingMessage');
   const content = document.getElementById('applicationContent');
 
@@ -43,103 +43,70 @@ async function loadJob() {
   const jobId = getJobId();
 
   if (!jobId) {
-    throw new Error('No job ID was found in the page URL.');
+    throw new Error('No job ID was provided.');
   }
 
-  const { data, error } = await supabaseClient
+  const result = await supabaseClient
     .from('jobs')
-    .select(`
-      id,
-      title,
-      description,
-      location,
-      country,
-      employment_type,
-      experience_required,
-      skills_required,
-      salary_range,
-      accommodation,
-      application_deadline
-    `)
+    .select(
+      'id,title,location,country,employment_type,experience_required,salary_range'
+    )
     .eq('id', jobId)
     .eq('status', 'published')
     .maybeSingle();
 
-  if (error) {
-    console.error('Job query error:', error);
-    throw new Error(error.message);
+  if (result.error) {
+    throw new Error(result.error.message);
   }
 
-  if (!data) {
-    throw new Error(
-      'This job could not be found or is no longer published.'
-    );
+  if (!result.data) {
+    throw new Error('This job was not found or is no longer published.');
   }
 
-  currentJob = data;
+  currentJob = result.data;
 
   document.getElementById('jobTitle').textContent =
-    data.title || 'Untitled Job';
+    currentJob.title || 'Untitled Job';
 
   document.getElementById('jobLocation').textContent =
-    [data.location, data.country]
+    [currentJob.location, currentJob.country]
       .filter(Boolean)
       .join(', ') || 'Not specified';
 
   document.getElementById('jobEmployment').textContent =
-    data.employment_type || 'Not specified';
+    currentJob.employment_type || 'Not specified';
 
   document.getElementById('jobExperience').textContent =
-    data.experience_required || 'Not specified';
+    currentJob.experience_required || 'Not specified';
 
   document.getElementById('jobSalary').textContent =
-    data.salary_range || 'Not specified';
+    currentJob.salary_range || 'Not specified';
 }
 
-async function checkAuthentication() {
-  const {
-    data: { session },
-    error
-  } = await supabaseClient.auth.getSession();
+async function checkLogin() {
+  const result = await supabaseClient.auth.getSession();
 
-  if (error) {
-    console.error('Session error:', error);
-    throw new Error('Unable to check your login session.');
+  if (result.error) {
+    throw new Error(result.error.message);
   }
 
+  const session = result.data.session;
+
   if (!session || !session.user) {
-    document.getElementById('profileArea').innerHTML = `
-      <div class="profile-warning">
-        <strong>Sign in required</strong>
+    document.getElementById('profileArea').innerHTML =
+      '<div class="profile-warning">' +
+      '<strong>Sign in required</strong>' +
+      '<p>Please sign in before applying for this job.</p>' +
+      '<div class="apply-actions">' +
+      '<button type="button" class="btn blue" id="loginButton">Sign In</button>' +
+      '<a href="jobs.html" class="btn gray">Back to Find Jobs</a>' +
+      '</div>' +
+      '</div>';
 
-        <p>
-          Please sign in to your Rolling Mill World account
-          before applying for this job.
-        </p>
+    const button = document.getElementById('loginButton');
 
-        <div class="apply-actions">
-          <button
-            type="button"
-            class="btn blue"
-            id="loginToApply"
-          >
-            Sign In
-          </button>
-
-          <a
-            href="jobs.html"
-            class="btn gray"
-          >
-            Back to Find Jobs
-          </a>
-        </div>
-      </div>
-    `;
-
-    const loginButton = document.getElementById('loginToApply');
-
-    if (loginButton) {
-      loginButton.addEventListener('click', () => {
+    if (button) {
+      button.addEventListener('click', function () {
         if (typeof openAuth === 'function') {
           openAuth('login');
         } else {
@@ -156,108 +123,64 @@ async function checkAuthentication() {
   return true;
 }
 
-async function loadJobSeekerProfile() {
-  const { data, error } = await supabaseClient
+async function loadProfile() {
+  const result = await supabaseClient
     .from('job_seekers')
-    .select(`
-      id,
-      full_name,
-      professional_title,
-      resume_path
-    `)
+    .select('id,full_name,professional_title,resume_path')
     .eq('user_id', currentUser.id)
     .maybeSingle();
 
-  if (error) {
-    console.error('Job seeker profile error:', error);
-    throw new Error(error.message);
+  if (result.error) {
+    throw new Error(result.error.message);
   }
 
-  if (!data) {
-    document.getElementById('profileArea').innerHTML = `
-      <div class="profile-warning">
-
-        <strong>Job seeker profile required</strong>
-
-        <p>
-          You need to create your job seeker profile
-          before applying for a job.
-        </p>
-
-        <div class="apply-actions">
-
-          <a
-            href="job-seeker.html"
-            class="btn blue"
-          >
-            Create Job Seeker Profile
-          </a>
-
-          <a
-            href="jobs.html"
-            class="btn gray"
-          >
-            Back to Find Jobs
-          </a>
-
-        </div>
-
-      </div>
-    `;
+  if (!result.data) {
+    document.getElementById('profileArea').innerHTML =
+      '<div class="profile-warning">' +
+      '<strong>Job seeker profile required</strong>' +
+      '<p>Create your job seeker profile before applying.</p>' +
+      '<div class="apply-actions">' +
+      '<a href="job-seeker.html" class="btn blue">Create Profile</a>' +
+      '<a href="jobs.html" class="btn gray">Back to Find Jobs</a>' +
+      '</div>' +
+      '</div>';
 
     return false;
   }
 
-  currentJobSeeker = data;
+  currentJobSeeker = result.data;
 
-  document.getElementById('profileArea').innerHTML = `
-    <div
-      class="profile-warning"
-      style="background:#f5f7fa;border-color:#ddd;"
-    >
-
-      <strong>
-        Applying as ${escapeHtml(data.full_name || 'Job Seeker')}
-      </strong>
-
-      <p>
-        ${escapeHtml(
-          data.professional_title || 'Job Seeker'
-        )}
-      </p>
-
-      <p>
-        ${
-          data.resume_path
-            ? 'Resume uploaded'
-            : 'No resume uploaded'
-        }
-      </p>
-
-    </div>
-  `;
+  document.getElementById('profileArea').innerHTML =
+    '<div class="profile-warning" style="background:#f5f7fa;border-color:#ddd;">' +
+    '<strong>Applying as ' +
+    escapeHtml(currentJobSeeker.full_name || 'Job Seeker') +
+    '</strong>' +
+    '<p>' +
+    escapeHtml(currentJobSeeker.professional_title || 'Job Seeker') +
+    '</p>' +
+    '<p>' +
+    (currentJobSeeker.resume_path
+      ? 'Resume uploaded'
+      : 'No resume uploaded') +
+    '</p>' +
+    '</div>';
 
   return true;
 }
 
 async function checkExistingApplication() {
-  const { data, error } = await supabaseClient
+  const result = await supabaseClient
     .from('job_applications')
-    .select(`
-      id,
-      status,
-      created_at
-    `)
+    .select('id,status,created_at')
     .eq('job_id', currentJob.id)
     .eq('job_seeker_id', currentJobSeeker.id)
     .maybeSingle();
 
-  if (error) {
-    console.error('Application check error:', error);
-    throw new Error(error.message);
+  if (result.error) {
+    throw new Error(result.error.message);
   }
 
-  if (!data) {
+  if (!result.data) {
     return false;
   }
 
@@ -265,37 +188,16 @@ async function checkExistingApplication() {
 
   document.getElementById('profileArea').insertAdjacentHTML(
     'afterend',
-    `
-      <div class="profile-warning">
-
-        <strong>
-          Application already submitted
-        </strong>
-
-        <p>
-          You have already applied for this job.
-        </p>
-
-        <p>
-          Application status:
-          <strong>
-            ${escapeHtml(data.status || 'submitted')}
-          </strong>
-        </p>
-
-        <div class="apply-actions">
-
-          <a
-            href="jobs.html"
-            class="btn blue"
-          >
-            Find More Jobs
-          </a>
-
-        </div>
-
-      </div>
-    `
+    '<div class="profile-warning">' +
+    '<strong>Application already submitted</strong>' +
+    '<p>You have already applied for this job.</p>' +
+    '<p>Application status: <strong>' +
+    escapeHtml(result.data.status || 'submitted') +
+    '</strong></p>' +
+    '<div class="apply-actions">' +
+    '<a href="jobs.html" class="btn blue">Find More Jobs</a>' +
+    '</div>' +
+    '</div>'
   );
 
   return true;
@@ -304,37 +206,31 @@ async function checkExistingApplication() {
 async function submitApplication(event) {
   event.preventDefault();
 
-  const button =
-    document.getElementById('submitApplication');
-
-  const coverMessage =
-    document.getElementById('coverMessage').value.trim();
+  const button = document.getElementById('submitApplication');
+  const message = document.getElementById('coverMessage').value.trim();
 
   button.disabled = true;
   button.textContent = 'Submitting...';
 
-  const { data, error } = await supabaseClient
+  const result = await supabaseClient
     .from('job_applications')
     .insert({
       job_id: currentJob.id,
       job_seeker_id: currentJobSeeker.id,
-      cover_message: coverMessage || null,
+      cover_message: message || null,
       status: 'submitted'
     })
     .select('id')
     .single();
 
-  if (error) {
-    console.error('Application submission error:', error);
+  if (result.error) {
+    console.error(result.error);
 
-    if (error.code === '23505') {
-      showStatus(
-        'You have already applied for this job.',
-        'error'
-      );
+    if (result.error.code === '23505') {
+      showStatus('You have already applied for this job.', 'error');
     } else {
       showStatus(
-        error.message || 'Unable to submit application.',
+        result.error.message || 'Unable to submit application.',
         'error'
       );
     }
@@ -345,133 +241,73 @@ async function submitApplication(event) {
     return;
   }
 
-  console.log('Application created:', data);
+  document.getElementById('applicationForm').style.display = 'none';
 
-  document.getElementById('applicationForm').style.display =
-    'none';
-
-  document.getElementById('profileArea').innerHTML = `
-    <div class="status-message show success">
-
-      <strong>
-        Application submitted successfully.
-      </strong>
-
-      <p>
-        Your application has been sent for this position.
-      </p>
-
-      <div class="apply-actions">
-
-        <a
-          href="jobs.html"
-          class="btn blue"
-        >
-          Find More Jobs
-        </a>
-
-        <a
-          href="job-seeker.html"
-          class="btn gray"
-        >
-          View My Profile
-        </a>
-
-      </div>
-
-    </div>
-  `;
+  document.getElementById('profileArea').innerHTML =
+    '<div class="status-message show success">' +
+    '<strong>Application submitted successfully.</strong>' +
+    '<p>Your application has been sent for this position.</p>' +
+    '<div class="apply-actions">' +
+    '<a href="jobs.html" class="btn blue">Find More Jobs</a>' +
+    '<a href="job-seeker.html" class="btn gray">View My Profile</a>' +
+    '</div>' +
+    '</div>';
 }
 
-async function initializeApplicationPage() {
+async function initialize() {
   try {
-    console.log('Starting job application page...');
-
     if (typeof getSupabaseClient !== 'function') {
-      throw new Error(
-        'auth.js did not load correctly.'
-      );
+      throw new Error('auth.js did not load correctly.');
     }
 
     supabaseClient = getSupabaseClient();
 
     if (!supabaseClient) {
-      throw new Error(
-        'Supabase client could not be initialized.'
-      );
+      throw new Error('Supabase could not be initialized.');
     }
-
-    console.log('Supabase initialized.');
-
-    const jobId = getJobId();
-
-    console.log('Job ID:', jobId);
 
     await loadJob();
 
-    console.log('Job loaded:', currentJob);
+    showContent();
 
-    showApplicationContent();
+    const loggedIn = await checkLogin();
 
-    const authenticated =
-      await checkAuthentication();
-
-    if (!authenticated) {
+    if (!loggedIn) {
       return;
     }
 
-    console.log('User authenticated:', currentUser.id);
+    const profileLoaded = await loadProfile();
 
-    const profileExists =
-      await loadJobSeekerProfile();
-
-    if (!profileExists) {
+    if (!profileLoaded) {
       return;
     }
 
-    console.log(
-      'Job seeker profile:',
-      currentJobSeeker.id
-    );
-
-    const alreadyApplied =
-      await checkExistingApplication();
+    const alreadyApplied = await checkExistingApplication();
 
     if (alreadyApplied) {
       return;
     }
 
-    document.getElementById(
-      'applicationForm'
-    ).style.display = 'block';
-
-    console.log(
-      'Application form ready.'
-    );
+    document.getElementById('applicationForm').style.display = 'block';
 
   } catch (error) {
+    console.error('Application page error:', error);
 
-    console.error(
-      'Application initialization error:',
-      error
-    );
-
-    showApplicationContent();
+    showContent();
 
     showStatus(
-      error.message ||
-      'Could not load job application page.',
+      error.message || 'Could not load the application page.',
       'error'
     );
   }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const loading = document.getElementById('loadingMessage');
+  const form = document.getElementById('applicationForm');
 
-  if (loading) {
-    loading.textContent = 'JOB-APPLY.JS IS LOADING CORRECTLY';
+  if (form) {
+    form.addEventListener('submit', submitApplication);
   }
+
+  initialize();
 });
-
-
