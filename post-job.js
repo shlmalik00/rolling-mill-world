@@ -122,23 +122,25 @@ if (button) {
 }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('postJobForm');
+  const button = document.getElementById('postJobButton');
 
-const form = document.getElementById('postJobForm');
+  console.log('post-job.js loaded');
+  console.log('form:', form);
+  console.log('button:', button);
 
-if (form) {
-form.addEventListener('submit', submitJob);
-}
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
 
-try {
-await getEmployerUser();
-} catch (err) {
-console.error(err);
+      console.log('Post Job form submitted');
 
-showJobMessage(
-  err.message || 'Please sign in to continue.'
-);
+      const msg = document.getElementById('jobMsg');
 
-}
-
+      if (msg) {
+        msg.textContent = 'Button is working. Testing connection...';
+      }
+    });
+  }
 });
