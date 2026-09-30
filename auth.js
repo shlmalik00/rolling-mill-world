@@ -433,13 +433,12 @@ document.addEventListener(
       );
 
 
-    } catch (err) {
-
-      console.warn(
-        'Could not attach auth listener:',
-        err
-      );
-    }
+   } catch (err) {
+  console.error(
+    'Could not refresh auth UI:',
+    err
+  );
+}
 
   }
 );
