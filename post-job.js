@@ -3,6 +3,10 @@ let postJobClient = null;
 async function getPostJobClient() {
 if (postJobClient) return postJobClient;
 
+if (typeof getSupabaseClient !== 'function') {
+throw new Error('Authentication system is not available.');
+}
+
 postJobClient = await getSupabaseClient();
 
 return postJobClient;
@@ -39,14 +43,16 @@ e.preventDefault();
 
 const button = document.getElementById('postJobButton');
 
+try {
+
+
 if (button) {
-button.disabled = true;
-button.textContent = 'Posting...';
+  button.disabled = true;
+  button.textContent = 'Posting...';
 }
 
 showJobMessage('Posting your job...');
 
-try {
 const { sb, user } = await getEmployerUser();
 
 const title = document.getElementById('title').value.trim();
@@ -67,14 +73,11 @@ if (!description) {
 
 const payload = {
   employer_user_id: user.id,
-  title,
-  description,
-  location:
-    document.getElementById('location').value.trim() || null,
-  country:
-    document.getElementById('country').value.trim() || null,
-  employment_type:
-    document.getElementById('employmentType').value || null,
+  title: title,
+  description: description,
+  location: document.getElementById('location').value.trim() || null,
+  country: document.getElementById('country').value.trim() || null,
+  employment_type: document.getElementById('employmentType').value || null,
   experience_required:
     document.getElementById('experienceRequired').value.trim() || null,
   skills_required:
@@ -85,17 +88,23 @@ const payload = {
     document.getElementById('accommodation').value || null,
   application_deadline:
     document.getElementById('applicationDeadline').value || null,
-
   status: 'draft'
 };
+
+console.log('Submitting job:', payload);
 
 const { data, error } = await sb
   .from('jobs')
   .insert(payload)
-  .select('id')
+  .select('id, title, status')
   .single();
 
-if (error) throw error;
+if (error) {
+  console.error('Supabase job error:', error);
+  throw new Error(error.message);
+}
+
+console.log('Job created:', data);
 
 document.getElementById('postJobForm').reset();
 
@@ -104,15 +113,19 @@ showJobMessage(
   true
 );
 
+
 } catch (err) {
 
-console.error('Job posting failed:', err);
+
+console.error('Post Job failed:', err);
 
 showJobMessage(
   err.message || 'Could not post the job.'
 );
 
+
 } finally {
+
 
 if (button) {
   button.disabled = false;
@@ -123,24 +136,16 @@ if (button) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('postJobForm');
-  const button = document.getElementById('postJobButton');
 
-  console.log('post-job.js loaded');
-  console.log('form:', form);
-  console.log('button:', button);
+const form = document.getElementById('postJobForm');
 
-  if (form) {
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
+if (!form) {
+console.error('postJobForm was not found.');
+return;
+}
 
-      console.log('Post Job form submitted');
+console.log('Post Job form ready.');
 
-      const msg = document.getElementById('jobMsg');
+form.addEventListener('submit', submitJob);
 
-      if (msg) {
-        msg.textContent = 'Button is working. Testing connection...';
-      }
-    });
-  }
 });
