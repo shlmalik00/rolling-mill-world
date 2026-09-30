@@ -1,13 +1,17 @@
 let jobDetailsSupabase = null;
 
 document.addEventListener('DOMContentLoaded', async function () {
-  const loadingMessage = document.getElementById('loadingMessage');
-  const jobContent = document.getElementById('jobContent');
-  const errorMessage = document.getElementById('errorMessage');
+  const container = document.getElementById('jobDetails');
+
+  if (!container) {
+    return;
+  }
 
   try {
+    // Get the initialized Supabase client from auth.js
     jobDetailsSupabase = await getSupabaseClient();
 
+    // Get job ID from URL
     const params = new URLSearchParams(window.location.search);
     const jobId = params.get('id');
 
@@ -15,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       throw new Error('No job was specified.');
     }
 
+    // Load published job
     const {
       data: job,
       error
@@ -39,79 +44,163 @@ document.addEventListener('DOMContentLoaded', async function () {
       .single();
 
     if (error) {
-      console.error('Job query error:', error);
+      console.error('Supabase job error:', error);
       throw new Error('This job could not be found.');
     }
 
-    document.title = `${job.title} | Rolling Mill World`;
-
-    document.getElementById('jobTitle').textContent =
-      job.title || 'Untitled Job';
-
-    document.getElementById('jobLocation').textContent =
-      formatValue(job.location, job.country);
-
-    document.getElementById('jobEmployment').textContent =
-      formatValue(job.employment_type);
-
-    document.getElementById('jobExperience').textContent =
-      formatValue(job.experience_required);
-
-    document.getElementById('jobSalary').textContent =
-      formatValue(job.salary_range);
-
-    document.getElementById('jobAccommodation').textContent =
-      formatValue(job.accommodation);
-
-    document.getElementById('jobDeadline').textContent =
-      formatDate(job.application_deadline);
-
-    document.getElementById('jobDescription').textContent =
-      job.description || 'No description provided.';
-
-    document.getElementById('jobSkills').textContent =
-      job.skills_required || 'Not specified';
-
-    const applyButton = document.getElementById('applyButton');
-
-    if (applyButton) {
-      applyButton.href =
-        `job-apply.html?id=${encodeURIComponent(job.id)}`;
+    if (!job) {
+      throw new Error('This job could not be found.');
     }
 
-    loadingMessage.style.display = 'none';
-    jobContent.style.display = 'block';
+    // Update browser title
+    document.title =
+      `${job.title || 'Job Details'} | Rolling Mill World`;
+
+    // Build location
+    const location = [
+      job.location,
+      job.country
+    ]
+      .filter(value => value && String(value).trim())
+      .join(', ');
+
+    // Render job
+    container.innerHTML = `
+      <div style="
+        max-width: 850px;
+        margin-top: 25px;
+        background: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 30px;
+      ">
+
+        <h1 style="margin-top:0;">
+          ${escapeHtml(job.title || 'Untitled Job')}
+        </h1>
+
+        <div style="
+          color:#555;
+          margin-bottom:25px;
+          line-height:1.8;
+        ">
+          <div>
+            <strong>Location:</strong>
+            ${escapeHtml(location || 'Not specified')}
+          </div>
+
+          <div>
+            <strong>Employment:</strong>
+            ${escapeHtml(job.employment_type || 'Not specified')}
+          </div>
+
+          <div>
+            <strong>Experience:</strong>
+            ${escapeHtml(job.experience_required || 'Not specified')}
+          </div>
+
+          <div>
+            <strong>Salary:</strong>
+            ${escapeHtml(job.salary_range || 'Not specified')}
+          </div>
+
+          <div>
+            <strong>Accommodation:</strong>
+            ${escapeHtml(job.accommodation || 'Not specified')}
+          </div>
+
+          <div>
+            <strong>Application Deadline:</strong>
+            ${formatDate(job.application_deadline)}
+          </div>
+        </div>
+
+        <hr style="
+          border:0;
+          border-top:1px solid #eee;
+          margin:25px 0;
+        ">
+
+        <h2>Job Description</h2>
+
+        <div style="
+          line-height:1.7;
+          white-space:pre-wrap;
+          margin-bottom:30px;
+        ">
+          ${escapeHtml(
+            job.description || 'No description provided.'
+          )}
+        </div>
+
+        <h2>Required Skills</h2>
+
+        <div style="
+          line-height:1.7;
+          white-space:pre-wrap;
+          margin-bottom:30px;
+        ">
+          ${escapeHtml(
+            job.skills_required || 'Not specified'
+          )}
+        </div>
+
+        <div style="
+          margin-top:30px;
+          display:flex;
+          gap:12px;
+          flex-wrap:wrap;
+        ">
+
+          <a
+            id="applyButton"
+            class="btn blue"
+            href="job-apply.html?id=${encodeURIComponent(job.id)}"
+          >
+            Apply for This Job
+          </a>
+
+          <a
+            class="btn"
+            href="jobs.html"
+          >
+            Back to Find Jobs
+          </a>
+
+        </div>
+
+      </div>
+    `;
 
   } catch (error) {
     console.error('Job details error:', error);
 
-    loadingMessage.style.display = 'none';
+    container.innerHTML = `
+      <div style="
+        max-width:850px;
+        margin-top:25px;
+        padding:25px;
+        border:1px solid #f0b7b7;
+        border-radius:10px;
+        background:#fff5f5;
+      ">
+        <h2>Unable to load this job</h2>
 
-    errorMessage.textContent =
-      error.message || 'Could not load this job.';
+        <p>
+          ${escapeHtml(
+            error.message || 'Something went wrong.'
+          )}
+        </p>
 
-    errorMessage.style.display = 'block';
+        <p>
+          <a href="jobs.html">
+            Return to Find Jobs
+          </a>
+        </p>
+      </div>
+    `;
   }
 });
-
-
-function formatValue(value, secondValue) {
-  const values = [];
-
-  if (value !== null && value !== undefined && String(value).trim()) {
-    values.push(String(value).trim());
-  }
-
-  if (
-    secondValue !== null &&
-    secondValue !== undefined &&
-    String(secondValue).trim()
-  ) {
-    values.push(String(secondValue).trim());
-  }
-
-  return values.length ? values.join(', ') : 'Not specified';
-}
 
 
 function formatDate(value) {
@@ -122,9 +211,21 @@ function formatDate(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return String(value);
+    return escapeHtml(String(value));
   }
 
-  return date.toLocaleDateString();
+  return escapeHtml(
+    date.toLocaleDateString()
+  );
+}
+
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
