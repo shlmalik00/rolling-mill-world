@@ -229,6 +229,85 @@
   </div>
 </footer>
 
+  <div id="authModal" class="authModal">
+
+  <div class="authBox">
+
+```
+<button
+  type="button"
+  class="authClose"
+  onclick="closeAuth()"
+>
+  ×
+</button>
+
+<h2 id="authTitle">Welcome back</h2>
+
+<p id="authSubtitle">
+  Sign in to your Rolling Mill World account.
+</p>
+
+<div id="authMsg" class="authMsg"></div>
+
+<form id="authForm">
+
+  <input
+    type="hidden"
+    id="authMode"
+    value="login"
+  >
+
+  <div id="authName" style="display:none;">
+    <label for="authNameInput">Full name</label>
+    <input
+      id="authNameInput"
+      type="text"
+      placeholder="Your full name"
+    >
+  </div>
+
+  <label for="authEmail">Email</label>
+  <input
+    id="authEmail"
+    type="email"
+    required
+    placeholder="you@example.com"
+  >
+
+  <label for="authPassword">Password</label>
+  <input
+    id="authPassword"
+    type="password"
+    required
+    minlength="6"
+    placeholder="Your password"
+  >
+
+  <button
+    class="btn blue"
+    type="submit"
+    id="authSubmit"
+  >
+    Sign in
+  </button>
+
+</form>
+
+<div id="authToggle">
+  New to Rolling Mill World?
+  <button
+    type="button"
+    onclick="setAuthMode('signup')"
+  >
+    Create an account
+  </button>
+</div>
+
+  </div>
+
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="auth.js"></script>
