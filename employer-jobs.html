@@ -1,60 +1,161 @@
 <!doctype html>
-
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
   <title>My Jobs | Rolling Mill World</title>
+
   <link rel="stylesheet" href="styles.css">
 </head>
 
+
 <body>
 
+
 <header>
+
   <div class="nav wrap">
+
     <a class="brand" href="index.html">
       <b>RMW</b> Rolling Mill <em>World</em>
     </a>
 
-<nav>
-  <a href="index.html#categories">Categories</a>
-  <a href="directory.html">Suppliers</a>
-  <a href="index.html#rfq">Post RFQ</a>
-  <a href="job-seeker.html">Careers</a>
-  <a href="jobs.html">Jobs / Find Jobs</a>
-  <a href="employer-jobs.html">My Jobs</a>
-</nav>
 
-<a class="btn blue" href="account.html">My Account</a>
+    <nav>
+      <a href="index.html#categories">
+        Categories
+      </a>
+
+      <a href="directory.html">
+        Suppliers
+      </a>
+
+      <a href="index.html#rfq">
+        Post RFQ
+      </a>
+
+      <a href="job-seeker.html">
+        Careers
+      </a>
+
+      <a href="jobs.html">
+        Jobs / Find Jobs
+      </a>
+
+      <a href="employer-jobs.html">
+        My Jobs
+      </a>
+    </nav>
+
+
+    <a
+      class="btn blue"
+      href="account.html"
+    >
+      My Account
+    </a>
 
   </div>
+
 </header>
+
+
 
 <main class="section wrap">
 
-<label>RMW CAREERS</label>
+
+  <label>RMW CAREERS</label>
+
 
   <h1>My Jobs</h1>
 
+
   <p>
-    Manage the jobs you have posted on Rolling Mill World.
+    Manage the jobs you have posted on
+    Rolling Mill World.
   </p>
 
-  <div id="employerJobsMsg"></div>
 
-  <div id="employerJobsResults"></div>
+  <!-- Login message -->
 
-  <a class="btn blue" href="post-job.html">
-    Post a New Job
-  </a>
+  <section
+    id="employerJobsLogin"
+    class="card"
+    style="display:none;"
+  >
+
+    <h2>
+      Sign in to manage your jobs
+    </h2>
+
+    <p>
+      Employers must sign in to view and
+      manage their job listings.
+    </p>
+
+    <button
+      type="button"
+      class="btn blue"
+      onclick="openAuth('login')"
+    >
+      Sign In
+    </button>
+
+  </section>
+
+
+
+  <!-- Jobs area -->
+
+  <section
+    id="employerJobsArea"
+    style="display:none;"
+  >
+
+    <div id="employerJobsMsg"></div>
+
+
+    <div
+      id="employerJobsResults"
+    ></div>
+
+
+    <p style="margin-top:20px;">
+
+      <a
+        class="btn blue"
+        href="post-job.html"
+      >
+        Post a New Job
+      </a>
+
+    </p>
+
+  </section>
+
 
 </main>
 
+
+
 <footer>
+
   <div class="wrap">
-    <small>© 2026 Rolling Mill World</small>
+
+    <small>
+      © 2026 Rolling Mill World
+    </small>
+
   </div>
+
 </footer>
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -62,5 +163,8 @@
 
 <script src="employer-jobs.js"></script>
 
+
 </body>
+
 </html>
+
