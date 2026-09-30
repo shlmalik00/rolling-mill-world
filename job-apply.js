@@ -466,20 +466,12 @@ async function initializeApplicationPage() {
   }
 }
 
-document.addEventListener(
-  'DOMContentLoaded',
-  function () {
+document.addEventListener('DOMContentLoaded', function () {
+  const loading = document.getElementById('loadingMessage');
 
-    const form =
-      document.getElementById('applicationForm');
-
-    if (form) {
-      form.addEventListener(
-        'submit',
-        submitApplication
-      );
-    }
-
-    initializeApplicationPage();
+  if (loading) {
+    loading.textContent = 'JOB-APPLY.JS IS LOADING CORRECTLY';
   }
-);
+});
+
+
