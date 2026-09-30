@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Job Seeker Profile | Rolling Mill World</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header>
+  <div class="nav wrap">
+    <a class="brand" href="index.html">
+      <b>RMW</b> Rolling Mill <em>World</em>
+    </a>
+
+    <nav>
+      <a href="index.html#categories">Categories</a>
+      <a href="directory.html">Suppliers</a>
+      <a href="index.html#rfq">Post RFQ</a>
+    </nav>
+
+    <a class="btn blue" href="account.html">My Account</a>
+  </div>
+</header>
+
+<main class="section wrap">
+
+  <label>RMW CAREERS</label>
+
+  <h1>Create your job seeker profile</h1>
+
+  <p>
+    Create a professional profile so employers in the rolling-mill
+    and steel industry can find you.
+  </p>
+
+  <div id="jobMsg"></div>
+
+  <form id="jobSeekerForm">
+
+    <section class="card">
+
+      <h2>Personal Information</h2>
+
+      <div class="form-grid">
+
+        <div>
+          <label for="fullName">Full name *</label>
+          <input
+            id="fullName"
+            type="text"
+            required
+            placeholder="Your full name"
+          >
+        </div>
+
+        <div>
+          <label for="professionalTitle">Professional title</label>
+          <input
+            id="professionalTitle"
+            type="text"
+            placeholder="e.g. Rolling Mill Engineer"
+          >
+        </div>
+
+        <div>
+          <label for="phone">Phone</label>
+          <input
+            id="phone"
+            type="tel"
+            placeholder="+91..."
+          >
+        </div>
+
+        <div>
+          <label for="location">Current location</label>
+          <input
+            id="location"
+            type="text"
+            placeholder="City, Country"
+          >
+        </div>
+
+        <div>
+          <label for="preferredLocations">Preferred locations</label>
+          <input
+            id="preferredLocations"
+            type="text"
+            placeholder="India, UAE, Saudi Arabia..."
+          >
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="card">
+
+      <h2>Professional Information</h2>
+
+      <div class="form-grid">
+
+        <div>
+          <label for="skills">Skills</label>
+          <textarea
+            id="skills"
+            rows="4"
+            placeholder="Rolling mill operation, maintenance, PLC, electrical..."
+          ></textarea>
+        </div>
+
+        <div>
+          <label for="experienceYears">Years of experience</label>
+          <input
+            id="experienceYears"
+            type="number"
+            min="0"
+            step="0.1"
+            placeholder="10"
+          >
+        </div>
+
+        <div>
+          <label for="rollingMillExperience">
+            Rolling-mill experience
+          </label>
+          <textarea
+            id="rollingMillExperience"
+            rows="4"
+            placeholder="Describe your rolling-mill experience..."
+          ></textarea>
+        </div>
+
+        <div>
+          <label for="availability">Availability</label>
+          <select id="availability">
+            <option value="">Select</option>
+            <option value="Immediately">Immediately</option>
+            <option value="Within 1 month">Within 1 month</option>
+            <option value="Within 3 months">Within 3 months</option>
+            <option value="Not currently available">Not currently available</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="expectedSalary">Expected salary</label>
+          <input
+            id="expectedSalary"
+            type="text"
+            placeholder="e.g. USD 2,000/month"
+          >
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="card">
+
+      <h2>Resume / CV</h2>
+
+      <p>
+        Your CV will be stored privately. Employers will not receive a
+        permanent public file URL.
+      </p>
+
+      <div id="currentResume"></div>
+
+      <label for="resume">Upload CV</label>
+
+      <input
+        id="resume"
+        type="file"
+        accept=".pdf,.doc,.docx"
+      >
+
+      <small>
+        PDF, DOC or DOCX. Maximum 10 MB.
+      </small>
+
+    </section>
+
+    <button
+      class="btn blue"
+      type="submit"
+      id="saveJobSeeker"
+    >
+      Save Job Seeker Profile
+    </button>
+
+  </form>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <small>© 2026 Rolling Mill World</small>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="job-seeker.js"></script>
+
+</body>
+</html>
