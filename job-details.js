@@ -183,12 +183,12 @@ async function loadJobDetails() {
 
         <div style="margin-top:24px;">
 
-          <a
-            class="btn blue"
-            href="job-seeker.html"
-          >
-            Apply for This Job
-          </a>
+         <a
+  class="btn blue"
+  href="job-apply.html?id=${encodeURIComponent(data.id)}"
+>
+  Apply for This Job
+</a>
 
           <a
             class="btn"
