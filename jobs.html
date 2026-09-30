@@ -1,0 +1,105 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Jobs / Find Jobs | Rolling Mill World</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header>
+  <div class="nav wrap">
+
+<a class="brand" href="index.html">
+  <b>RMW</b> Rolling Mill <em>World</em>
+</a>
+
+<nav>
+  <a href="index.html#categories">Categories</a>
+  <a href="directory.html">Suppliers</a>
+  <a href="index.html#rfq">Post RFQ</a>
+  <a href="job-seeker.html">Careers</a>
+  <a href="jobs.html">Jobs / Find Jobs</a>
+</nav>
+
+<a class="btn blue" href="account.html">My Account</a>
+
+  </div>
+</header>
+
+<main class="section wrap">
+
+<label>RMW CAREERS</label>
+
+  <h1>Find Jobs</h1>
+
+  <p>
+    Find rolling-mill, steel, machinery and industrial jobs from employers
+    using Rolling Mill World.
+  </p>
+
+  <section class="card">
+
+<div class="form-grid">
+
+  <div>
+    <label for="search">Search</label>
+    <input
+      id="search"
+      type="text"
+      placeholder="Job title, skill or keyword"
+    >
+  </div>
+
+  <div>
+    <label for="country">Country</label>
+    <input
+      id="country"
+      type="text"
+      placeholder="India, UAE, Saudi Arabia..."
+    >
+  </div>
+
+  <div>
+    <label for="employmentType">Employment type</label>
+    <select id="employmentType">
+      <option value="">All types</option>
+      <option value="Full-time">Full-time</option>
+      <option value="Part-time">Part-time</option>
+      <option value="Contract">Contract</option>
+      <option value="Temporary">Temporary</option>
+      <option value="Internship">Internship</option>
+    </select>
+  </div>
+
+</div>
+
+<button class="btn dark" type="button" id="searchJobs">
+  Search Jobs
+</button>
+
+  </section>
+
+  <div id="jobsCount"></div>
+
+  <div id="jobsResults"></div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <small>© 2026 Rolling Mill World</small>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="auth.js"></script>
+
+<script src="jobs.js"></script>
+
+</body>
+</html>
