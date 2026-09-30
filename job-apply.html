@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Apply for Job | Rolling Mill World</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .apply-page {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
+
+    .apply-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+
+    .apply-card h1 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .job-summary {
+      background: #f5f7fa;
+      border-radius: 10px;
+      padding: 18px;
+      margin: 20px 0 28px;
+    }
+
+    .job-summary p {
+      margin: 7px 0;
+    }
+
+    .apply-form label {
+      display: block;
+      font-weight: 600;
+      margin: 18px 0 8px;
+    }
+
+    .apply-form textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: vertical;
+      font: inherit;
+      box-sizing: border-box;
+    }
+
+    .apply-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 11px 18px;
+      border-radius: 7px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .btn.blue {
+      background: #1266d6;
+      color: #fff;
+    }
+
+    .btn.gray {
+      background: #eee;
+      color: #222;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status-message {
+      margin: 18px 0;
+      padding: 13px 15px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .status-message.show {
+      display: block;
+    }
+
+    .status-message.error {
+      background: #ffe9e9;
+      color: #9b1c1c;
+    }
+
+    .status-message.success {
+      background: #e9f8ed;
+      color: #176b2c;
+    }
+
+    .profile-warning {
+      background: #fff5d9;
+      border: 1px solid #f0d37a;
+      padding: 18px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="container">
+      <h2>Rolling Mill World</h2>
+
+      <nav>
+        <a href="index.html#categories">Categories</a>
+        <a href="directory.html">Suppliers</a>
+        <a href="index.html#rfq">Post RFQ</a>
+        <a href="job-seeker.html">Careers</a>
+        <a href="jobs.html">Jobs / Find Jobs</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="apply-page">
+
+    <div class="apply-card">
+
+      <h1>Apply for Job</h1>
+
+      <div id="statusMessage" class="status-message"></div>
+
+      <div id="loadingMessage" class="loading">
+        Loading job...
+      </div>
+
+      <div id="applicationContent" style="display:none;">
+
+        <div class="job-summary">
+          <h2 id="jobTitle"></h2>
+
+          <p>
+            <strong>Location:</strong>
+            <span id="jobLocation"></span>
+          </p>
+
+          <p>
+            <strong>Employment:</strong>
+            <span id="jobEmployment"></span>
+          </p>
+
+          <p>
+            <strong>Experience:</strong>
+            <span id="jobExperience"></span>
+          </p>
+
+          <p>
+            <strong>Salary:</strong>
+            <span id="jobSalary"></span>
+          </p>
+        </div>
+
+        <div id="profileArea"></div>
+
+        <form id="applicationForm" class="apply-form" style="display:none;">
+
+          <label for="coverMessage">
+            Cover Message
+          </label>
+
+          <textarea
+            id="coverMessage"
+            maxlength="5000"
+            placeholder="Introduce yourself and explain why you are suitable for this position..."
+          ></textarea>
+
+          <div class="apply-actions">
+
+            <button
+              type="submit"
+              id="submitApplication"
+              class="btn blue"
+            >
+              Submit Application
+            </button>
+
+            <a
+              href="jobs.html"
+              class="btn gray"
+            >
+              Back to Find Jobs
+            </a>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script src="job-apply.js"></script>
+
+</body>
+</html>
+
