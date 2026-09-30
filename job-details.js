@@ -8,18 +8,40 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   try {
-    // Get the initialized Supabase client from auth.js
-    jobDetailsSupabase = await getSupabaseClient();
+    // Load Supabase configuration
+    const configResponse = await fetch('/api/config');
 
-    // Get job ID from URL
+    if (!configResponse.ok) {
+      throw new Error('Could not load Supabase configuration.');
+    }
+
+    const config = await configResponse.json();
+
+    if (!config.url || !config.key) {
+      throw new Error('Supabase configuration is missing.');
+    }
+
+    if (!window.supabase) {
+      throw new Error('Supabase library did not load.');
+    }
+
+    // Create Supabase client directly.
+    jobDetailsSupabase = window.supabase.createClient(
+      config.url,
+      config.key
+    );
+
+    // Read job ID from URL.
     const params = new URLSearchParams(window.location.search);
     const jobId = params.get('id');
 
     if (!jobId) {
-      throw new Error('No job was specified.');
+      throw new Error('No job ID was provided.');
     }
 
-    // Load published job
+    console.log('Loading job:', jobId);
+
+    // Fetch published job.
     const {
       data: job,
       error
@@ -45,18 +67,18 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (error) {
       console.error('Supabase job error:', error);
-      throw new Error('This job could not be found.');
+      throw new Error(error.message || 'Could not load this job.');
     }
 
     if (!job) {
-      throw new Error('This job could not be found.');
+      throw new Error('Job not found.');
     }
 
-    // Update browser title
+    console.log('Job loaded:', job);
+
     document.title =
       `${job.title || 'Job Details'} | Rolling Mill World`;
 
-    // Build location
     const location = [
       job.location,
       job.country
@@ -64,15 +86,14 @@ document.addEventListener('DOMContentLoaded', async function () {
       .filter(value => value && String(value).trim())
       .join(', ');
 
-    // Render job
     container.innerHTML = `
       <div style="
-        max-width: 850px;
-        margin-top: 25px;
-        background: #ffffff;
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        padding: 30px;
+        max-width:850px;
+        margin-top:25px;
+        background:#fff;
+        border:1px solid #ddd;
+        border-radius:12px;
+        padding:30px;
       ">
 
         <h1 style="margin-top:0;">
@@ -81,9 +102,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         <div style="
           color:#555;
-          margin-bottom:25px;
           line-height:1.8;
+          margin-bottom:25px;
         ">
+
           <div>
             <strong>Location:</strong>
             ${escapeHtml(location || 'Not specified')}
@@ -113,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             <strong>Application Deadline:</strong>
             ${formatDate(job.application_deadline)}
           </div>
+
         </div>
 
         <hr style="
@@ -146,14 +169,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         </div>
 
         <div style="
-          margin-top:30px;
           display:flex;
           gap:12px;
           flex-wrap:wrap;
+          margin-top:30px;
         ">
 
           <a
-            id="applyButton"
             class="btn blue"
             href="job-apply.html?id=${encodeURIComponent(job.id)}"
           >
@@ -173,17 +195,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     `;
 
   } catch (error) {
-    console.error('Job details error:', error);
+    console.error('JOB DETAILS ERROR:', error);
 
     container.innerHTML = `
       <div style="
         max-width:850px;
         margin-top:25px;
         padding:25px;
-        border:1px solid #f0b7b7;
+        border:1px solid #e0b4b4;
         border-radius:10px;
         background:#fff5f5;
       ">
+
         <h2>Unable to load this job</h2>
 
         <p>
@@ -197,6 +220,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             Return to Find Jobs
           </a>
         </p>
+
       </div>
     `;
   }
@@ -211,12 +235,10 @@ function formatDate(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return escapeHtml(String(value));
+    return String(value);
   }
 
-  return escapeHtml(
-    date.toLocaleDateString()
-  );
+  return date.toLocaleDateString();
 }
 
 
