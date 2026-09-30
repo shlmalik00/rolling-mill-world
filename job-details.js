@@ -1,168 +1,130 @@
-const supabaseClient = getSupabaseClient();
+let jobDetailsSupabase = null;
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+document.addEventListener('DOMContentLoaded', async function () {
+  const loadingMessage = document.getElementById('loadingMessage');
+  const jobContent = document.getElementById('jobContent');
+  const errorMessage = document.getElementById('errorMessage');
 
-function getJobId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('id');
-}
+  try {
+    jobDetailsSupabase = await getSupabaseClient();
 
-async function loadJobDetails() {
-  const container = document.getElementById('jobDetails');
-  const jobId = getJobId();
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get('id');
 
-  if (!jobId) {
-    container.innerHTML = `
-      <div class="job-card">
-        <h2>Job not found</h2>
-        <p>No job ID was provided.</p>
-        <a class="btn blue" href="jobs.html">Back to Find Jobs</a>
-      </div>
-    `;
-    return;
-  }
+    if (!jobId) {
+      throw new Error('No job was specified.');
+    }
 
-  const { data: job, error } = await supabaseClient
-    .from('jobs')
-    .select(`
-      id,
-      title,
-      description,
-      location,
-      country,
-      employment_type,
-      experience_required,
-      skills_required,
-      salary_range,
-      accommodation,
-      application_deadline,
-      created_at
-    `)
-    .eq('id', jobId)
-    .eq('status', 'published')
-    .single();
+    const {
+      data: job,
+      error
+    } = await jobDetailsSupabase
+      .from('jobs')
+      .select(`
+        id,
+        title,
+        description,
+        location,
+        country,
+        employment_type,
+        experience_required,
+        skills_required,
+        salary_range,
+        accommodation,
+        application_deadline,
+        created_at
+      `)
+      .eq('id', jobId)
+      .eq('status', 'published')
+      .single();
 
-  if (error || !job) {
+    if (error) {
+      console.error('Job query error:', error);
+      throw new Error('This job could not be found.');
+    }
+
+    document.title = `${job.title} | Rolling Mill World`;
+
+    document.getElementById('jobTitle').textContent =
+      job.title || 'Untitled Job';
+
+    document.getElementById('jobLocation').textContent =
+      formatValue(job.location, job.country);
+
+    document.getElementById('jobEmployment').textContent =
+      formatValue(job.employment_type);
+
+    document.getElementById('jobExperience').textContent =
+      formatValue(job.experience_required);
+
+    document.getElementById('jobSalary').textContent =
+      formatValue(job.salary_range);
+
+    document.getElementById('jobAccommodation').textContent =
+      formatValue(job.accommodation);
+
+    document.getElementById('jobDeadline').textContent =
+      formatDate(job.application_deadline);
+
+    document.getElementById('jobDescription').textContent =
+      job.description || 'No description provided.';
+
+    document.getElementById('jobSkills').textContent =
+      job.skills_required || 'Not specified';
+
+    const applyButton = document.getElementById('applyButton');
+
+    if (applyButton) {
+      applyButton.href =
+        `job-apply.html?id=${encodeURIComponent(job.id)}`;
+    }
+
+    loadingMessage.style.display = 'none';
+    jobContent.style.display = 'block';
+
+  } catch (error) {
     console.error('Job details error:', error);
 
-    container.innerHTML = `
-      <div class="job-card">
-        <h2>Could not load job</h2>
-        <p>${escapeHtml(error?.message || 'Job not found.')}</p>
-        <a class="btn blue" href="jobs.html">Back to Find Jobs</a>
-      </div>
-    `;
+    loadingMessage.style.display = 'none';
 
-    return;
+    errorMessage.textContent =
+      error.message || 'Could not load this job.';
+
+    errorMessage.style.display = 'block';
+  }
+});
+
+
+function formatValue(value, secondValue) {
+  const values = [];
+
+  if (value !== null && value !== undefined && String(value).trim()) {
+    values.push(String(value).trim());
   }
 
-  const location = [job.location, job.country]
-    .filter(Boolean)
-    .join(', ');
+  if (
+    secondValue !== null &&
+    secondValue !== undefined &&
+    String(secondValue).trim()
+  ) {
+    values.push(String(secondValue).trim());
+  }
 
-  const skills = job.skills_required
-    ? escapeHtml(job.skills_required)
-    : 'Not specified';
-
-  const description = job.description
-    ? escapeHtml(job.description)
-    : 'No description provided.';
-
-  const salary = job.salary_range
-    ? escapeHtml(job.salary_range)
-    : 'Not specified';
-
-  const accommodation = job.accommodation
-    ? escapeHtml(job.accommodation)
-    : 'Not specified';
-
-  const deadline = job.application_deadline
-    ? escapeHtml(job.application_deadline)
-    : 'Not specified';
-
-  container.innerHTML = `
-    <div class="job-card">
-
-      <h1>${escapeHtml(job.title)}</h1>
-
-      <div class="job-meta">
-
-        <p>
-          <strong>Location:</strong>
-          ${escapeHtml(location || 'Not specified')}
-        </p>
-
-        <p>
-          <strong>Employment:</strong>
-          ${escapeHtml(job.employment_type || 'Not specified')}
-        </p>
-
-        <p>
-          <strong>Experience:</strong>
-          ${escapeHtml(job.experience_required || 'Not specified')}
-        </p>
-
-        <p>
-          <strong>Salary:</strong>
-          ${salary}
-        </p>
-
-        <p>
-          <strong>Accommodation:</strong>
-          ${accommodation}
-        </p>
-
-        <p>
-          <strong>Application Deadline:</strong>
-          ${deadline}
-        </p>
-
-      </div>
-
-      <hr>
-
-      <h2>Job Description</h2>
-
-      <p>
-        ${description}
-      </p>
-
-      <h2>Required Skills</h2>
-
-      <p>
-        ${skills}
-      </p>
-
-      <div class="job-actions">
-
-        <a
-          class="btn blue"
-          href="job-apply.html?id=${encodeURIComponent(job.id)}"
-        >
-          Apply for This Job
-        </a>
-
-        <a
-          class="btn gray"
-          href="jobs.html"
-        >
-          Back to Find Jobs
-        </a>
-
-      </div>
-
-    </div>
-  `;
+  return values.length ? values.join(', ') : 'Not specified';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadJobDetails();
-});
+
+function formatDate(value) {
+  if (!value) {
+    return 'Not specified';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString();
+}
 
