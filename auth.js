@@ -57,7 +57,16 @@ function setAuthMode(mode) {
   const subtitle = document.getElementById('authSubtitle');
   const submit = document.getElementById('authSubmit');
   const toggle = document.getElementById('authToggle');
-  const name = document.getElementById('authName');
+  const name = <label id="authNameLabel" for="authName" style="display:none;">
+  Full name
+</label>
+
+<input
+  id="authName"
+  type="text"
+  placeholder="Your full name"
+  style="display:none;"
+>;
   const modeInput = document.getElementById('authMode');
 
   if (title) {
