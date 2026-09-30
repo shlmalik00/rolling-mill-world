@@ -272,10 +272,25 @@ function renderApplicants(applications) {
             <span>${escapeHtml(expectedSalary)}</span>
           </div>
 
-          <div class="info-item">
-            <strong>Resume</strong>
-            <span>Private resume — secure access will be added next.</span>
-          </div>
+<div class="info-item">
+  <strong>Resume</strong>
+
+  ${
+    applicant.resume_path
+      ? `
+        <button
+          type="button"
+          class="btn blue view-resume-button"
+          data-resume-path="${escapeHtml(applicant.resume_path)}"
+        >
+          View Resume
+        </button>
+      `
+      : `
+        <span>No resume uploaded.</span>
+      `
+  }
+</div>
 
         </div>
 
