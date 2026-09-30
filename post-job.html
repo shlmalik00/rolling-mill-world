@@ -41,145 +41,187 @@
     operations.
   </p>
 
-  <div id="jobMsg"></div>
+  <!-- Sign-in gate -->
 
-  <form id="postJobForm">
+  <section id="jobLoginGate" class="card">
 
-<section class="card">
-  <h2>Job Information</h2>
 
-  <div class="form-grid">
+<h2>Sign in to post a job</h2>
 
-    <div>
-      <label for="title">Job title *</label>
-      <input
-        id="title"
-        type="text"
-        required
-        placeholder="e.g. Rolling Mill Maintenance Engineer"
-      >
+<p>
+  Employers must sign in before creating a job listing.
+</p>
+
+<button
+  type="button"
+  class="btn blue"
+  onclick="openAuth('login')"
+>
+  Sign In
+</button>
+
+<p>
+  Don't have an account?
+  <button
+    type="button"
+    class="btn dark"
+    onclick="openAuth('signup')"
+  >
+    Create Account
+  </button>
+</p>
+
+
+  </section>
+
+  <!-- Job form -->
+
+  <section id="jobFormSection" style="display:none;">
+
+
+<div id="jobMsg"></div>
+
+<form id="postJobForm">
+
+  <section class="card">
+
+    <h2>Job Information</h2>
+
+    <div class="form-grid">
+
+      <div>
+        <label for="title">Job title *</label>
+        <input
+          id="title"
+          type="text"
+          required
+          placeholder="e.g. Rolling Mill Maintenance Engineer"
+        >
+      </div>
+
+      <div>
+        <label for="companyName">Company name *</label>
+        <input
+          id="companyName"
+          type="text"
+          required
+          placeholder="Your company name"
+        >
+      </div>
+
+      <div>
+        <label for="location">Job location</label>
+        <input
+          id="location"
+          type="text"
+          placeholder="City, State / Region"
+        >
+      </div>
+
+      <div>
+        <label for="country">Country</label>
+        <input
+          id="country"
+          type="text"
+          placeholder="India"
+        >
+      </div>
+
+      <div>
+        <label for="employmentType">Employment type</label>
+        <select id="employmentType">
+          <option value="">Select</option>
+          <option value="Full-time">Full-time</option>
+          <option value="Part-time">Part-time</option>
+          <option value="Contract">Contract</option>
+          <option value="Temporary">Temporary</option>
+          <option value="Internship">Internship</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="experienceRequired">Experience required</label>
+        <input
+          id="experienceRequired"
+          type="text"
+          placeholder="e.g. 5–10 years"
+        >
+      </div>
+
     </div>
 
     <div>
-      <label for="companyName">Company name *</label>
-      <input
-        id="companyName"
-        type="text"
-        required
-        placeholder="Your company name"
-      >
-    </div>
-
-    <div>
-      <label for="location">Job location</label>
-      <input
-        id="location"
-        type="text"
-        placeholder="City, State / Region"
-      >
-    </div>
-
-    <div>
-      <label for="country">Country</label>
-      <input
-        id="country"
-        type="text"
-        placeholder="India"
-      >
-    </div>
-
-    <div>
-      <label for="employmentType">Employment type</label>
-      <select id="employmentType">
-        <option value="">Select</option>
-        <option value="Full-time">Full-time</option>
-        <option value="Part-time">Part-time</option>
-        <option value="Contract">Contract</option>
-        <option value="Temporary">Temporary</option>
-        <option value="Internship">Internship</option>
-      </select>
-    </div>
-
-    <div>
-      <label for="experienceRequired">Experience required</label>
-      <input
-        id="experienceRequired"
-        type="text"
-        placeholder="e.g. 5–10 years"
-      >
-    </div>
-
-  </div>
-
-  <div>
-    <label for="description">Job description *</label>
-    <textarea
-      id="description"
-      rows="7"
-      required
-      placeholder="Describe the position, responsibilities and requirements..."
-    ></textarea>
-  </div>
-
-</section>
-
-<section class="card">
-
-  <h2>Requirements</h2>
-
-  <div class="form-grid">
-
-    <div>
-      <label for="skillsRequired">Skills required</label>
+      <label for="description">Job description *</label>
       <textarea
-        id="skillsRequired"
-        rows="5"
-        placeholder="Rolling mill operation, PLC, electrical maintenance, mechanical maintenance..."
+        id="description"
+        rows="7"
+        required
+        placeholder="Describe the position, responsibilities and requirements..."
       ></textarea>
     </div>
 
-    <div>
-      <label for="salaryRange">Salary range</label>
-      <input
-        id="salaryRange"
-        type="text"
-        placeholder="e.g. USD 1,500–2,500/month"
-      >
+  </section>
+
+  <section class="card">
+
+    <h2>Requirements</h2>
+
+    <div class="form-grid">
+
+      <div>
+        <label for="skillsRequired">Skills required</label>
+        <textarea
+          id="skillsRequired"
+          rows="5"
+          placeholder="Rolling mill operation, PLC, electrical maintenance..."
+        ></textarea>
+      </div>
+
+      <div>
+        <label for="salaryRange">Salary range</label>
+        <input
+          id="salaryRange"
+          type="text"
+          placeholder="e.g. USD 1,500–2,500/month"
+        >
+      </div>
+
+      <div>
+        <label for="accommodation">Accommodation</label>
+        <select id="accommodation">
+          <option value="">Select</option>
+          <option value="Provided">Provided</option>
+          <option value="Not provided">Not provided</option>
+          <option value="Negotiable">Negotiable</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="applicationDeadline">Application deadline</label>
+        <input
+          id="applicationDeadline"
+          type="date"
+        >
+      </div>
+
     </div>
 
-    <div>
-      <label for="accommodation">Accommodation</label>
-      <select id="accommodation">
-        <option value="">Select</option>
-        <option value="Provided">Provided</option>
-        <option value="Not provided">Not provided</option>
-        <option value="Negotiable">Negotiable</option>
-      </select>
-    </div>
+  </section>
 
-    <div>
-      <label for="applicationDeadline">Application deadline</label>
-      <input
-        id="applicationDeadline"
-        type="date"
-      >
-    </div>
+  <button
+    class="btn blue"
+    type="submit"
+    id="postJobButton"
+  >
+    Post Job
+  </button>
 
-  </div>
+</form>
 
-</section>
-
-<button
-  class="btn blue"
-  type="submit"
-  id="postJobButton"
->
-  Post Job
-</button>
-
-  </form>
+  </section>
 
 </main>
+
 
 <footer>
   <div class="wrap">
