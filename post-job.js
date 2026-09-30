@@ -1,267 +1,227 @@
 let postJobClient = null;
 
 async function getPostJobClient() {
-if (postJobClient) return postJobClient;
+  if (postJobClient) return postJobClient;
 
-postJobClient = await getSupabaseClient();
+  if (typeof getSupabaseClient !== 'function') {
+    throw new Error('Authentication system is not available.');
+  }
 
-return postJobClient;
+  postJobClient = await getSupabaseClient();
+
+  return postJobClient;
 }
 
 function showJobMessage(message, ok = false) {
-const el = document.getElementById('jobMsg');
+  const el = document.getElementById('jobMsg');
 
-if (!el) return;
+  if (!el) return;
 
-el.textContent = message;
-el.className = ok ? 'ok' : '';
+  el.textContent = message;
+  el.className = ok ? 'authMsg ok' : 'authMsg';
 }
 
 function showJobForm(isLoggedIn) {
+  const gate = document.getElementById('jobLoginGate');
+  const formSection = document.getElementById('jobFormSection');
 
-const gate = document.getElementById('jobLoginGate');
-const formSection = document.getElementById('jobFormSection');
+  if (isLoggedIn) {
+    if (gate) {
+      gate.style.display = 'none';
+    }
 
-if (isLoggedIn) {
+    if (formSection) {
+      formSection.style.display = 'block';
+    }
+  } else {
+    if (gate) {
+      gate.style.display = 'block';
+    }
 
-
-if (gate) {
-  gate.style.display = 'none';
-}
-
-if (formSection) {
-  formSection.style.display = 'block';
-}
-
-
-} else {
-
-
-if (gate) {
-  gate.style.display = 'block';
-}
-
-if (formSection) {
-  formSection.style.display = 'none';
-}
-
-
-}
+    if (formSection) {
+      formSection.style.display = 'none';
+    }
+  }
 }
 
 async function checkLogin() {
+  try {
+    const sb = await getPostJobClient();
 
-try {
+    const { data, error } = await sb.auth.getSession();
 
+    if (error) throw error;
 
-const sb = await getPostJobClient();
+    const loggedIn =
+      !!data.session && !!data.session.user;
 
-const { data, error } = await sb.auth.getSession();
+    showJobForm(loggedIn);
 
-if (error) throw error;
+    return loggedIn;
+  } catch (err) {
+    console.error('Login check failed:', err);
 
-const loggedIn =
-  !!data.session && !!data.session.user;
+    showJobForm(false);
 
-showJobForm(loggedIn);
-
-return loggedIn;
-
-
-} catch (err) {
-
-
-console.error('Login check failed:', err);
-
-showJobForm(false);
-
-return false;
-
-}
+    return false;
+  }
 }
 
 async function getEmployerUser() {
+  const sb = await getPostJobClient();
 
-const sb = await getPostJobClient();
+  const { data, error } = await sb.auth.getSession();
 
-const { data, error } = await sb.auth.getSession();
+  if (error) throw error;
 
-if (error) throw error;
+  if (!data.session || !data.session.user) {
+    throw new Error('Please sign in before posting a job.');
+  }
 
-if (!data.session || !data.session.user) {
-throw new Error('Please sign in before posting a job.');
-}
-
-return {
-sb,
-user: data.session.user
-};
+  return {
+    sb,
+    user: data.session.user
+  };
 }
 
 async function submitJob(e) {
+  e.preventDefault();
 
-e.preventDefault();
+  const form = document.getElementById('postJobForm');
+  const button = document.getElementById('postJobButton');
 
-const button =
-document.getElementById('postJobButton');
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Posting...';
+    }
 
-try {
+    showJobMessage('Posting your job...');
 
+    const { sb, user } = await getEmployerUser();
 
-if (button) {
-  button.disabled = true;
-  button.textContent = 'Posting...';
+    const titleEl = document.getElementById('title');
+    const companyNameEl = document.getElementById('companyName');
+    const descriptionEl = document.getElementById('description');
+
+    if (!titleEl || !companyNameEl || !descriptionEl) {
+      throw new Error('The job form is missing required fields.');
+    }
+
+    const title = titleEl.value.trim();
+    const companyName = companyNameEl.value.trim();
+    const description = descriptionEl.value.trim();
+
+    if (!title) {
+      throw new Error('Job title is required.');
+    }
+
+    if (!companyName) {
+      throw new Error('Company name is required.');
+    }
+
+    if (!description) {
+      throw new Error('Job description is required.');
+    }
+
+    /*
+      The current jobs table does not have a company_name column.
+
+      We validate the company name here, but we do not send it
+      to the jobs table.
+
+      Later, we can connect the job to companies.id using
+      company_id.
+    */
+
+    const payload = {
+      employer_user_id: user.id,
+
+      title: title,
+
+      description: description,
+
+      location:
+        document.getElementById('location')?.value.trim() || null,
+
+      country:
+        document.getElementById('country')?.value.trim() || null,
+
+      employment_type:
+        document.getElementById('employmentType')?.value || null,
+
+      experience_required:
+        document.getElementById('experienceRequired')?.value.trim() || null,
+
+      skills_required:
+        document.getElementById('skillsRequired')?.value.trim() || null,
+
+      salary_range:
+        document.getElementById('salaryRange')?.value.trim() || null,
+
+      accommodation:
+        document.getElementById('accommodation')?.value || null,
+
+      application_deadline:
+        document.getElementById('applicationDeadline')?.value || null,
+
+      status: 'draft'
+    };
+
+    const { data, error } = await sb
+      .from('jobs')
+      .insert(payload)
+      .select('id, title, status')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    if (form) {
+      form.reset();
+    }
+
+    showJobMessage(
+      'Job saved successfully as a draft. Job ID: ' + data.id,
+      true
+    );
+
+  } catch (err) {
+    console.error('Post Job failed:', err);
+
+    showJobMessage(
+      err.message || 'Could not post the job.'
+    );
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Post Job';
+    }
+  }
 }
 
-showJobMessage('Posting your job...');
+document.addEventListener('DOMContentLoaded', async () => {
+  const form = document.getElementById('postJobForm');
 
-const { sb, user } =
-  await getEmployerUser();
+  if (form) {
+    form.addEventListener('submit', submitJob);
+  }
 
-const title =
-  document.getElementById('title').value.trim();
+  await checkLogin();
 
-const companyName =
-  document.getElementById('companyName').value.trim();
+  try {
+    const sb = await getPostJobClient();
 
-const description =
-  document.getElementById('description').value.trim();
+    sb.auth.onAuthStateChange(() => {
+      setTimeout(() => {
+        checkLogin();
+      }, 0);
+    });
 
-if (!title) {
-  throw new Error('Job title is required.');
-}
+  } catch (err) {
+    console.error('Auth listener failed:', err);
+  }
+});
 
-if (!companyName) {
-  throw new Error('Company name is required.');
-}
-
-if (!description) {
-  throw new Error('Job description is required.');
-}
-
-const payload = {
-
-  employer_user_id: user.id,
-
-  title: title,
-
-  description: description,
-
-  location:
-    document.getElementById('location').value.trim()
-    || null,
-
-  country:
-    document.getElementById('country').value.trim()
-    || null,
-
-  employment_type:
-    document.getElementById('employmentType').value
-    || null,
-
-  experience_required:
-    document.getElementById('experienceRequired')
-      .value.trim()
-    || null,
-
-  skills_required:
-    document.getElementById('skillsRequired')
-      .value.trim()
-    || null,
-
-  salary_range:
-    document.getElementById('salaryRange')
-      .value.trim()
-    || null,
-
-  accommodation:
-    document.getElementById('accommodation').value
-    || null,
-
-  application_deadline:
-    document.getElementById('applicationDeadline').value
-    || null,
-
-  status: 'draft'
-};
-
-const { data, error } =
-  await sb
-    .from('jobs')
-    .insert(payload)
-    .select('id, title, status')
-    .single();
-
-if (error) throw error;
-
-document
-  .getElementById('postJobForm')
-  .reset();
-
-showJobMessage(
-  'Job saved successfully as a draft. Job ID: ' +
-  data.id,
-  true
-);
-
-
-} catch (err) {
-
-
-console.error('Post Job failed:', err);
-
-showJobMessage(
-  err.message ||
-  'Could not post the job.'
-);
-
-
-} finally {
-
-
-if (button) {
-  button.disabled = false;
-  button.textContent = 'Post Job';
-}
-
-}
-}
-
-document.addEventListener(
-'DOMContentLoaded',
-async () => {
-
-const form =
-  document.getElementById('postJobForm');
-
-if (form) {
-  form.addEventListener(
-    'submit',
-    submitJob
-  );
-}
-
-await checkLogin();
-
-
-try {
-
-  const sb =
-    await getPostJobClient();
-
-  sb.auth.onAuthStateChange(() => {
-    setTimeout(() => {
-      checkLogin();
-    }, 0);
-  });
-
-} catch (err) {
-
-  console.error(
-    'Auth listener failed:',
-    err
-  );
-}
-
-}
-);
