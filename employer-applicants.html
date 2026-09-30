@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Applicants | Rolling Mill World</title>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .applicants-page {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
+
+    .page-header {
+      margin-bottom: 25px;
+    }
+
+    .page-header h1 {
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: #666;
+      margin: 0;
+    }
+
+    .job-info {
+      background: #f5f7fa;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    .job-info h2 {
+      margin: 0 0 8px;
+    }
+
+    .applicant-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .applicant-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .applicant-name {
+      margin: 0 0 5px;
+      font-size: 22px;
+    }
+
+    .applicant-title {
+      color: #555;
+      margin: 0;
+    }
+
+    .status-control {
+      min-width: 170px;
+    }
+
+    .status-control label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .status-control select {
+      width: 100%;
+      padding: 9px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .applicant-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 25px;
+      margin-bottom: 20px;
+    }
+
+    .info-item strong {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 3px;
+    }
+
+    .info-item span {
+      color: #222;
+      white-space: pre-wrap;
+    }
+
+    .cover-message {
+      background: #f8f9fb;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+
+    .cover-message strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .applied-date {
+      color: #777;
+      font-size: 13px;
+      margin-top: 15px;
+    }
+
+    .empty-state,
+    .error-state,
+    .loading-state {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .error-state {
+      color: #b00020;
+    }
+
+    @media (max-width: 700px) {
+      .applicant-header {
+        flex-direction: column;
+      }
+
+      .status-control {
+        width: 100%;
+      }
+
+      .applicant-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="container">
+    <div class="logo">
+      <a href="index.html">Rolling Mill World</a>
+    </div>
+
+    <nav>
+      <a href="index.html#categories">Categories</a>
+      <a href="directory.html">Suppliers</a>
+      <a href="index.html#rfq">Post RFQ</a>
+      <a href="job-seeker.html">Careers</a>
+      <a href="jobs.html">Jobs / Find Jobs</a>
+      <a href="employer-jobs.html">My Jobs</a>
+    </nav>
+  </div>
+</header>
+
+<main class="applicants-page">
+
+  <div class="page-header">
+    <h1>Job Applicants</h1>
+    <p>Review candidates and manage application status.</p>
+  </div>
+
+  <div id="jobInfo" class="job-info" style="display:none;">
+    <h2 id="jobTitle"></h2>
+    <p id="jobLocation"></p>
+  </div>
+
+  <div id="loadingMessage" class="loading-state">
+    Loading applicants...
+  </div>
+
+  <div id="errorMessage" class="error-state" style="display:none;"></div>
+
+  <div id="applicantsResults"></div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="employer-applicants.js?v=1"></script>
+
+</body>
+</html>
+
