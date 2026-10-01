@@ -1,3 +1,4 @@
+console.log('MY APPLICATIONS JS v10 LOADED');
 function escapeHtml(value) {
 return String(value == null ? '' : value)
 .replace(/&/g, '&')
