@@ -1,459 +1,284 @@
-console.log('MY APPLICATIONS JS v10 LOADED');
+console.log('MY APPLICATIONS JS LOADED');
 
-function escapeHtml(value) {
-return String(value == null ? '' : value)
-.replace(/&/g, '&')
-.replace(/</g, '<')
-.replace(/>/g, '>')
-.replace(/"/g, '"')
-.replace(/'/g, ''');
-}
+document.addEventListener('DOMContentLoaded', function () {
+console.log('MY APPLICATIONS DOM READY');
 
-function formatDate(value) {
-if (!value) return 'Unknown';
-
-const date = new Date(value);
-
-if (Number.isNaN(date.getTime())) {
-return value;
-}
-
-return date.toLocaleDateString(undefined, {
-year: 'numeric',
-month: 'short',
-day: 'numeric'
+startMyApplications();
 });
+
+async function startMyApplications() {
+try {
+var loading = document.getElementById('loadingMessage');
+
+
+if (loading) {
+  loading.textContent = 'Checking your sign-in...';
+  loading.style.display = 'block';
 }
 
-function statusLabel(status) {
-const value = String(status || 'submitted');
+var sb = await getSupabaseClient();
 
-return value.charAt(0).toUpperCase() + value.slice(1);
+console.log('SUPABASE CLIENT READY');
+
+var result = await sb.auth.getSession();
+
+if (result.error) {
+  throw result.error;
 }
 
-function setLoading(message) {
-const element = document.getElementById('loadingMessage');
-
-if (!element) return;
-
-element.textContent = message;
-element.style.display = 'block';
-}
-
-function hideLoading() {
-const element = document.getElementById('loadingMessage');
-
-if (element) {
-element.style.display = 'none';
-}
-}
-
-function showMessage(message) {
-const element = document.getElementById('statusMessage');
-
-if (!element) return;
-
-element.textContent = message;
-}
-
-async function loadMyApplications() {
-console.log('Starting My Applications...');
-
-setLoading('Checking your sign-in...');
-
-const sb = await getSupabaseClient();
-
-console.log('Supabase client ready.');
-
-const sessionResult = await sb.auth.getSession();
-
-if (sessionResult.error) {
-throw sessionResult.error;
-}
-
-const session = sessionResult.data.session;
+var session = result.data.session;
 
 console.log(
-'Session:',
-session ? 'SIGNED IN' : 'SIGNED OUT'
+  'SESSION:',
+  session ? 'SIGNED IN' : 'SIGNED OUT'
 );
 
 if (!session) {
-hideLoading();
+  if (loading) {
+    loading.style.display = 'none';
+  }
 
+  var message = document.getElementById('statusMessage');
 
-showMessage(
-  'Please sign in to view your job applications.'
-);
+  if (message) {
+    message.textContent =
+      'Please sign in to view your job applications.';
+  }
 
-return;
-
-
+  return;
 }
 
-const user = session.user;
+if (loading) {
+  loading.textContent =
+    'Loading your Job Seeker profile...';
+}
 
-console.log('User ID:', user.id);
-
-setLoading('Loading your Job Seeker profile...');
-
-const seekerResult = await sb
-.from('job_seekers')
-.select('id, full_name, professional_title')
-.eq('user_id', user.id)
-.maybeSingle();
+var seekerResult = await sb
+  .from('job_seekers')
+  .select('id, full_name, professional_title')
+  .eq('user_id', session.user.id)
+  .maybeSingle();
 
 if (seekerResult.error) {
-throw seekerResult.error;
+  throw seekerResult.error;
 }
-
-const seeker = seekerResult.data;
-
-console.log('Job seeker:', seeker);
-
-if (!seeker) {
-hideLoading();
-
-
-showMessage(
-  'No Job Seeker profile was found for this account.'
-);
-
-return;
-
-
-}
-
-setLoading('Loading your applications...');
-
-const applicationsResult = await sb
-.from('job_applications')
-.select(
-'id, job_id, status, created_at, updated_at'
-)
-.eq('job_seeker_id', seeker.id)
-.order('created_at', {
-ascending: false
-});
-
-if (applicationsResult.error) {
-throw applicationsResult.error;
-}
-
-const applications = applicationsResult.data || [];
 
 console.log(
-'Applications:',
-applications
+  'JOB SEEKER:',
+  seekerResult.data
 );
 
-const content =
-document.getElementById('applicationsContent');
+if (!seekerResult.data) {
+  if (loading) {
+    loading.style.display = 'none';
+  }
 
-const list =
-document.getElementById('applicationList');
+  var profileMessage =
+    document.getElementById('statusMessage');
 
-if (!content || !list) {
-throw new Error(
-'Application page elements were not found.'
-);
+  if (profileMessage) {
+    profileMessage.textContent =
+      'No Job Seeker profile was found for this account.';
+  }
+
+  return;
 }
 
-hideLoading();
+if (loading) {
+  loading.textContent =
+    'Loading your applications...';
+}
+
+var applicationsResult = await sb
+  .from('job_applications')
+  .select(
+    'id, job_id, status, created_at'
+  )
+  .eq(
+    'job_seeker_id',
+    seekerResult.data.id
+  )
+  .order(
+    'created_at',
+    { ascending: false }
+  );
+
+if (applicationsResult.error) {
+  throw applicationsResult.error;
+}
+
+console.log(
+  'APPLICATIONS:',
+  applicationsResult.data
+);
+
+if (loading) {
+  loading.style.display = 'none';
+}
+
+var content =
+  document.getElementById('applicationsContent');
+
+var list =
+  document.getElementById('applicationList');
+
+if (!content || !list) {
+  throw new Error(
+    'applicationList or applicationsContent was not found.'
+  );
+}
 
 content.style.display = 'block';
 
+var applications =
+  applicationsResult.data || [];
+
 if (applications.length === 0) {
-list.innerHTML = `       <div class="card">         <h3>No applications yet</h3>         <p>You have not applied for any jobs yet.</p>         <a class="btn blue" href="jobs.html">
-          Find Jobs         </a>       </div>
-    `;
+  list.innerHTML =
+    '<div class="card">' +
+    '<h3>No applications yet</h3>' +
+    '<p>You have not applied for any jobs yet.</p>' +
+    '<a class="btn blue" href="jobs.html">Find Jobs</a>' +
+    '</div>';
 
-
-return;
-
-
+  return;
 }
 
-setLoading('Loading job information...');
-
-const jobIds = [
-...new Set(
-applications
-.map(function(application) {
-return application.job_id;
-})
-.filter(Boolean)
-)
-];
-
-const jobsResult = await sb
-.from('jobs')
-.select(
-'id, title, location, country, employment_type, experience_required, company_id'
-)
-.in('id', jobIds);
-
-if (jobsResult.error) {
-throw jobsResult.error;
-}
-
-const jobs = jobsResult.data || [];
-
-console.log(
-'Jobs:',
-jobs
+var jobIds = applications.map(
+  function (application) {
+    return application.job_id;
+  }
 );
 
-const jobMap = new Map();
+var jobsResult = await sb
+  .from('jobs')
+  .select(
+    'id, title, location, country, employment_type, experience_required'
+  )
+  .in('id', jobIds);
 
-jobs.forEach(function(job) {
-jobMap.set(job.id, job);
-});
-
-const companyIds = [
-...new Set(
-jobs
-.map(function(job) {
-return job.company_id;
-})
-.filter(Boolean)
-)
-];
-
-const companyMap = new Map();
-
-if (companyIds.length > 0) {
-setLoading('Loading company information...');
-
-
-const companiesResult = await sb
-  .from('companies')
-  .select('id, company_name')
-  .in('id', companyIds);
-
-if (!companiesResult.error) {
-  const companies = companiesResult.data || [];
-
-  companies.forEach(function(company) {
-    companyMap.set(
-      company.id,
-      company.company_name
-    );
-  });
+if (jobsResult.error) {
+  throw jobsResult.error;
 }
 
+var jobs = jobsResult.data || [];
 
-}
+console.log(
+  'JOBS:',
+  jobs
+);
 
-hideLoading();
+var jobMap = {};
+
+jobs.forEach(
+  function (job) {
+    jobMap[job.id] = job;
+  }
+);
 
 list.innerHTML = applications.map(
-function(application) {
+  function (application) {
 
+    var job =
+      jobMap[application.job_id];
 
-  const job = jobMap.get(application.job_id);
+    if (!job) {
+      return (
+        '<div class="card">' +
+        '<h3>Job no longer available</h3>' +
+        '<p>Status: ' +
+        String(application.status || 'submitted') +
+        '</p>' +
+        '</div>'
+      );
+    }
 
-  if (!job) {
-    return `
-      <div class="card">
-        <h3>Job no longer available</h3>
+    var location = '';
 
-        <p>
-          Applied:
-          ${escapeHtml(
-            formatDate(application.created_at)
-          )}
-        </p>
+    if (job.location) {
+      location = job.location;
+    }
 
-        <p>
-          Status:
-          <strong>
-            ${escapeHtml(
-              statusLabel(application.status)
-            )}
-          </strong>
-        </p>
-      </div>
-    `;
+    if (job.country) {
+      if (location) {
+        location += ', ';
+      }
+
+      location += job.country;
+    }
+
+    var appliedDate =
+      new Date(
+        application.created_at
+      ).toLocaleDateString();
+
+    return (
+      '<div class="card applicationCard">' +
+
+      '<h3>' +
+      job.title +
+      '</h3>' +
+
+      '<p>' +
+      (location || '') +
+      '</p>' +
+
+      '<p>' +
+      '<strong>Employment:</strong> ' +
+      (job.employment_type || '') +
+      '</p>' +
+
+      '<p>' +
+      '<strong>Experience:</strong> ' +
+      (job.experience_required || '') +
+      '</p>' +
+
+      '<p>' +
+      '<strong>Applied:</strong> ' +
+      appliedDate +
+      '</p>' +
+
+      '<p>' +
+      '<strong>Status:</strong> ' +
+      (application.status || 'submitted') +
+      '</p>' +
+
+      '<a class="btn blue" href="job-details.html?id=' +
+      encodeURIComponent(job.id) +
+      '">' +
+      'View Job' +
+      '</a>' +
+
+      '</div>'
+    );
   }
-
-  const companyName =
-    companyMap.get(job.company_id) ||
-    'Rolling Mill World employer';
-
-  const location = [
-    job.location,
-    job.country
-  ]
-    .filter(Boolean)
-    .join(', ');
-
-  return `
-    <div class="card applicationCard">
-
-      <div class="applicationHeader">
-
-        <div>
-          <h3>
-            ${escapeHtml(job.title)}
-          </h3>
-
-          <p>
-            ${escapeHtml(companyName)}
-          </p>
-        </div>
-
-        <div class="applicationStatus">
-          ${escapeHtml(
-            statusLabel(application.status)
-          )}
-        </div>
-
-      </div>
-
-      <div class="applicationMeta">
-
-        ${
-          location
-            ? `
-              <span>
-                <strong>Location:</strong>
-                ${escapeHtml(location)}
-              </span>
-            `
-            : ''
-        }
-
-        ${
-          job.employment_type
-            ? `
-              <span>
-                <strong>Employment:</strong>
-                ${escapeHtml(job.employment_type)}
-              </span>
-            `
-            : ''
-        }
-
-        ${
-          job.experience_required
-            ? `
-              <span>
-                <strong>Experience:</strong>
-                ${escapeHtml(job.experience_required)}
-              </span>
-            `
-            : ''
-        }
-
-        <span>
-          <strong>Applied:</strong>
-          ${escapeHtml(
-            formatDate(application.created_at)
-          )}
-        </span>
-
-      </div>
-
-      <div class="applicationActions">
-
-        <a
-          class="btn blue"
-          href="job-details.html?id=${encodeURIComponent(
-            job.id
-          )}"
-        >
-          View Job
-        </a>
-
-      </div>
-
-    </div>
-  `;
-}
-
-
 ).join('');
-}
-
-async function initializeMyApplications() {
-try {
-showMessage('');
-
-
-await loadMyApplications();
 
 
 } catch (error) {
 
 
 console.error(
-  'My Applications error:',
+  'MY APPLICATIONS ERROR:',
   error
 );
 
-hideLoading();
+var loadingError =
+  document.getElementById('loadingMessage');
 
-showMessage(
-  error.message ||
-  'Could not load your applications.'
-);
-
-
-}
+if (loadingError) {
+  loadingError.style.display = 'none';
 }
 
-document.addEventListener(
-'DOMContentLoaded',
-async function() {
+var status =
+  document.getElementById('statusMessage');
 
-
-console.log(
-  'My Applications DOM ready.'
-);
-
-try {
-  await refreshAuthUI();
-} catch (error) {
-  console.warn(
-    'Auth UI refresh failed:',
-    error
-  );
-}
-
-await initializeMyApplications();
-
-try {
-  const sb = await getSupabaseClient();
-
-  sb.auth.onAuthStateChange(
-    async function(event, session) {
-
-      console.log(
-        'Auth event:',
-        event
-      );
-
-      if (
-        event === 'SIGNED_IN' &&
-        session
-      ) {
-        await initializeMyApplications();
-      }
-
-      if (event === 'SIGNED_OUT') {
-        window.location.reload();
-      }
-    }
-  );
-
-} catch (error) {
-  console.error(
-    'Auth listener failed:',
-    error
-  );
+if (status) {
+  status.textContent =
+    error.message ||
+    'Could not load your applications.';
 }
 
 
 }
-);
+}
