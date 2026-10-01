@@ -1,4 +1,5 @@
 console.log('MY APPLICATIONS JS v10 LOADED');
+
 function escapeHtml(value) {
 return String(value == null ? '' : value)
 .replace(/&/g, '&')
@@ -27,58 +28,57 @@ day: 'numeric'
 function statusLabel(status) {
 const value = String(status || 'submitted');
 
-return value.charAt(0).toUpperCase() +
-value.slice(1);
+return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function setLoading(message) {
-const el = document.getElementById('loadingMessage');
+const element = document.getElementById('loadingMessage');
 
-if (el) {
-el.textContent = message;
-el.style.display = 'block';
-}
+if (!element) return;
+
+element.textContent = message;
+element.style.display = 'block';
 }
 
 function hideLoading() {
-const el = document.getElementById('loadingMessage');
+const element = document.getElementById('loadingMessage');
 
-if (el) {
-el.style.display = 'none';
+if (element) {
+element.style.display = 'none';
 }
 }
 
 function showMessage(message) {
-const el = document.getElementById('statusMessage');
+const element = document.getElementById('statusMessage');
 
-if (!el) return;
+if (!element) return;
 
-el.textContent = message;
-el.className = 'statusMessage';
+element.textContent = message;
 }
 
 async function loadMyApplications() {
+console.log('Starting My Applications...');
+
 setLoading('Checking your sign-in...');
 
 const sb = await getSupabaseClient();
 
-const {
-data: sessionData,
-error: sessionError
-} = await sb.auth.getSession();
+console.log('Supabase client ready.');
 
-if (sessionError) {
-throw sessionError;
+const sessionResult = await sb.auth.getSession();
+
+if (sessionResult.error) {
+throw sessionResult.error;
 }
 
-const session = sessionData?.session;
+const session = sessionResult.data.session;
 
 console.log(
-'My Applications session:',
+'Session:',
 session ? 'SIGNED IN' : 'SIGNED OUT'
 );
 
-if (!session?.user) {
+if (!session) {
 hideLoading();
 
 
@@ -93,25 +93,23 @@ return;
 
 const user = session.user;
 
+console.log('User ID:', user.id);
+
 setLoading('Loading your Job Seeker profile...');
 
-const {
-data: seeker,
-error: seekerError
-} = await sb
+const seekerResult = await sb
 .from('job_seekers')
 .select('id, full_name, professional_title')
 .eq('user_id', user.id)
 .maybeSingle();
 
-if (seekerError) {
-throw seekerError;
+if (seekerResult.error) {
+throw seekerResult.error;
 }
 
-console.log(
-'Job seeker:',
-seeker
-);
+const seeker = seekerResult.data;
+
+console.log('Job seeker:', seeker);
 
 if (!seeker) {
 hideLoading();
@@ -128,10 +126,7 @@ return;
 
 setLoading('Loading your applications...');
 
-const {
-data: applications,
-error: applicationsError
-} = await sb
+const applicationsResult = await sb
 .from('job_applications')
 .select(
 'id, job_id, status, created_at, updated_at'
@@ -141,9 +136,11 @@ error: applicationsError
 ascending: false
 });
 
-if (applicationsError) {
-throw applicationsError;
+if (applicationsResult.error) {
+throw applicationsResult.error;
 }
+
+const applications = applicationsResult.data || [];
 
 console.log(
 'Applications:',
@@ -156,32 +153,21 @@ document.getElementById('applicationsContent');
 const list =
 document.getElementById('applicationList');
 
-hideLoading();
-
 if (!content || !list) {
 throw new Error(
 'Application page elements were not found.'
 );
 }
 
+hideLoading();
+
 content.style.display = 'block';
 
-if (!applications || applications.length === 0) {
-list.innerHTML = ` <div class="card"> <h3>No applications yet</h3>
+if (applications.length === 0) {
+list.innerHTML = `       <div class="card">         <h3>No applications yet</h3>         <p>You have not applied for any jobs yet.</p>         <a class="btn blue" href="jobs.html">
+          Find Jobs         </a>       </div>
+    `;
 
-
-    <p>
-      You have not applied for any jobs yet.
-    </p>
-
-    <a
-      class="btn blue"
-      href="jobs.html"
-    >
-      Find Jobs
-    </a>
-  </div>
-`;
 
 return;
 
@@ -193,41 +179,43 @@ setLoading('Loading job information...');
 const jobIds = [
 ...new Set(
 applications
-.map(application => application.job_id)
+.map(function(application) {
+return application.job_id;
+})
 .filter(Boolean)
 )
 ];
 
-const {
-data: jobs,
-error: jobsError
-} = await sb
+const jobsResult = await sb
 .from('jobs')
 .select(
 'id, title, location, country, employment_type, experience_required, company_id'
 )
 .in('id', jobIds);
 
-if (jobsError) {
-throw jobsError;
+if (jobsResult.error) {
+throw jobsResult.error;
 }
+
+const jobs = jobsResult.data || [];
 
 console.log(
 'Jobs:',
 jobs
 );
 
-const jobMap = new Map(
-(jobs || []).map(job => [
-job.id,
-job
-])
-);
+const jobMap = new Map();
+
+jobs.forEach(function(job) {
+jobMap.set(job.id, job);
+});
 
 const companyIds = [
 ...new Set(
-(jobs || [])
-.map(job => job.company_id)
+jobs
+.map(function(job) {
+return job.company_id;
+})
 .filter(Boolean)
 )
 ];
@@ -238,16 +226,15 @@ if (companyIds.length > 0) {
 setLoading('Loading company information...');
 
 
-const {
-  data: companies,
-  error: companiesError
-} = await sb
+const companiesResult = await sb
   .from('companies')
   .select('id, company_name')
   .in('id', companyIds);
 
-if (!companiesError && companies) {
-  companies.forEach(company => {
+if (!companiesResult.error) {
+  const companies = companiesResult.data || [];
+
+  companies.forEach(function(company) {
     companyMap.set(
       company.id,
       company.company_name
@@ -260,129 +247,133 @@ if (!companiesError && companies) {
 
 hideLoading();
 
-list.innerHTML = applications.map(application => {
+list.innerHTML = applications.map(
+function(application) {
 
 
-const job = jobMap.get(application.job_id);
+  const job = jobMap.get(application.job_id);
 
-if (!job) {
+  if (!job) {
+    return `
+      <div class="card">
+        <h3>Job no longer available</h3>
+
+        <p>
+          Applied:
+          ${escapeHtml(
+            formatDate(application.created_at)
+          )}
+        </p>
+
+        <p>
+          Status:
+          <strong>
+            ${escapeHtml(
+              statusLabel(application.status)
+            )}
+          </strong>
+        </p>
+      </div>
+    `;
+  }
+
+  const companyName =
+    companyMap.get(job.company_id) ||
+    'Rolling Mill World employer';
+
+  const location = [
+    job.location,
+    job.country
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   return `
-    <div class="card">
-      <h3>Job no longer available</h3>
+    <div class="card applicationCard">
 
-      <p>
-        Applied:
-        ${escapeHtml(
-          formatDate(application.created_at)
-        )}
-      </p>
+      <div class="applicationHeader">
 
-      <p>
-        Status:
-        <strong>
+        <div>
+          <h3>
+            ${escapeHtml(job.title)}
+          </h3>
+
+          <p>
+            ${escapeHtml(companyName)}
+          </p>
+        </div>
+
+        <div class="applicationStatus">
           ${escapeHtml(
             statusLabel(application.status)
           )}
-        </strong>
-      </p>
+        </div>
+
+      </div>
+
+      <div class="applicationMeta">
+
+        ${
+          location
+            ? `
+              <span>
+                <strong>Location:</strong>
+                ${escapeHtml(location)}
+              </span>
+            `
+            : ''
+        }
+
+        ${
+          job.employment_type
+            ? `
+              <span>
+                <strong>Employment:</strong>
+                ${escapeHtml(job.employment_type)}
+              </span>
+            `
+            : ''
+        }
+
+        ${
+          job.experience_required
+            ? `
+              <span>
+                <strong>Experience:</strong>
+                ${escapeHtml(job.experience_required)}
+              </span>
+            `
+            : ''
+        }
+
+        <span>
+          <strong>Applied:</strong>
+          ${escapeHtml(
+            formatDate(application.created_at)
+          )}
+        </span>
+
+      </div>
+
+      <div class="applicationActions">
+
+        <a
+          class="btn blue"
+          href="job-details.html?id=${encodeURIComponent(
+            job.id
+          )}"
+        >
+          View Job
+        </a>
+
+      </div>
+
     </div>
   `;
 }
 
-const companyName =
-  companyMap.get(job.company_id) ||
-  'Rolling Mill World employer';
 
-const location = [
-  job.location,
-  job.country
-]
-  .filter(Boolean)
-  .join(', ');
-
-return `
-  <div class="card applicationCard">
-
-    <div class="applicationHeader">
-
-      <div>
-        <h3>
-          ${escapeHtml(job.title)}
-        </h3>
-
-        <p>
-          ${escapeHtml(companyName)}
-        </p>
-      </div>
-
-      <div class="applicationStatus">
-        ${escapeHtml(
-          statusLabel(application.status)
-        )}
-      </div>
-
-    </div>
-
-    <div class="applicationMeta">
-
-      ${
-        location
-          ? `
-            <span>
-              <strong>Location:</strong>
-              ${escapeHtml(location)}
-            </span>
-          `
-          : ''
-      }
-
-      ${
-        job.employment_type
-          ? `
-            <span>
-              <strong>Employment:</strong>
-              ${escapeHtml(job.employment_type)}
-            </span>
-          `
-          : ''
-      }
-
-      ${
-        job.experience_required
-          ? `
-            <span>
-              <strong>Experience:</strong>
-              ${escapeHtml(job.experience_required)}
-            </span>
-          `
-          : ''
-      }
-
-      <span>
-        <strong>Applied:</strong>
-        ${escapeHtml(
-          formatDate(application.created_at)
-        )}
-      </span>
-
-    </div>
-
-    <div class="applicationActions">
-
-      <a
-        class="btn blue"
-        href="job-details.html?id=${encodeURIComponent(job.id)}"
-      >
-        View Job
-      </a>
-
-    </div>
-
-  </div>
-`;
-
-
-}).join('');
+).join('');
 }
 
 async function initializeMyApplications() {
@@ -414,10 +405,21 @@ showMessage(
 
 document.addEventListener(
 'DOMContentLoaded',
-async () => {
+async function() {
 
 
-await refreshAuthUI();
+console.log(
+  'My Applications DOM ready.'
+);
+
+try {
+  await refreshAuthUI();
+} catch (error) {
+  console.warn(
+    'Auth UI refresh failed:',
+    error
+  );
+}
 
 await initializeMyApplications();
 
@@ -425,7 +427,7 @@ try {
   const sb = await getSupabaseClient();
 
   sb.auth.onAuthStateChange(
-    async (event, session) => {
+    async function(event, session) {
 
       console.log(
         'Auth event:',
@@ -447,7 +449,7 @@ try {
 
 } catch (error) {
   console.error(
-    'Could not initialize auth listener:',
+    'Auth listener failed:',
     error
   );
 }
