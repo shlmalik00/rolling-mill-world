@@ -1,544 +1,395 @@
-let applicationsSupabase = null;
-let currentUser = null;
-let currentJobSeeker = null;
-
 function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function showError(message) {
-  const status =
-    document.getElementById('statusMessage');
-
-  if (status) {
-    status.textContent = message;
-    status.className =
-      'status-message show error';
-  }
-
-  console.error(
-    'MY APPLICATIONS ERROR:',
-    message
-  );
-}
-
-function showContent() {
-  const loading =
-    document.getElementById('loadingMessage');
-
-  const content =
-    document.getElementById('applicationsContent');
-
-  if (loading) {
-    loading.style.display = 'none';
-  }
-
-  if (content) {
-    content.style.display = 'block';
-  }
-}
-
-async function initializeSupabase() {
-  if (
-    typeof getSupabaseClient !== 'function'
-  ) {
-    throw new Error(
-      'auth.js did not load correctly.'
-    );
-  }
-
-  applicationsSupabase =
-    await getSupabaseClient();
-
-  return applicationsSupabase;
-}
-
-async function getCurrentUser() {
-  const { data, error } =
-    await applicationsSupabase.auth.getSession();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  if (
-    !data.session ||
-    !data.session.user
-  ) {
-    return null;
-  }
-
-  return data.session.user;
-}
-
-async function loadJobSeeker() {
-  const { data, error } =
-    await applicationsSupabase
-      .from('job_seekers')
-      .select(`
-        id,
-        full_name
-      `)
-      .eq(
-        'user_id',
-        currentUser.id
-      )
-      .maybeSingle();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  currentJobSeeker = data;
-
-  return data;
+return String(value == null ? '' : value)
+.replace(/&/g, '&')
+.replace(/</g, '<')
+.replace(/>/g, '>')
+.replace(/"/g, '"')
+.replace(/'/g, ''');
 }
 
 function formatDate(value) {
-  if (!value) {
-    return 'Not available';
-  }
+if (!value) return 'Unknown';
 
-  const date =
-    new Date(value);
+const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString(
-    'en-US',
-    {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }
-  );
+if (Number.isNaN(date.getTime())) {
+return value;
 }
 
-function renderNotSignedIn() {
-  const list =
-    document.getElementById(
-      'applicationList'
+return date.toLocaleDateString(undefined, {
+year: 'numeric',
+month: 'short',
+day: 'numeric'
+});
+}
+
+function statusLabel(status) {
+const value = String(status || 'submitted');
+
+return value.charAt(0).toUpperCase() +
+value.slice(1);
+}
+
+function showMessage(message, type = '') {
+const el = document.getElementById('statusMessage');
+
+if (!el) return;
+
+el.textContent = message;
+el.className = type
+? `statusMessage ${type}`
+: 'statusMessage';
+}
+
+async function loadMyApplications() {
+const sb = await getSupabaseClient();
+
+const {
+data: sessionData,
+error: sessionError
+} = await sb.auth.getSession();
+
+if (sessionError) {
+throw sessionError;
+}
+
+const session = sessionData?.session;
+
+console.log(
+'My Applications session:',
+session ? 'SIGNED IN' : 'SIGNED OUT'
+);
+
+if (!session || !session.user) {
+showMessage(
+'Please sign in to view your job applications.'
+);
+return;
+}
+
+const user = session.user;
+
+const {
+data: seeker,
+error: seekerError
+} = await sb
+.from('job_seekers')
+.select('id, full_name, professional_title')
+.eq('user_id', user.id)
+.maybeSingle();
+
+if (seekerError) {
+throw seekerError;
+}
+
+if (!seeker) {
+showMessage(
+'Please complete your Job Seeker profile before viewing applications.'
+);
+return;
+}
+
+const {
+data: applications,
+error: applicationsError
+} = await sb
+.from('job_applications')
+.select(
+'id, job_id, status, created_at, updated_at'
+)
+.eq('job_seeker_id', seeker.id)
+.order('created_at', {
+ascending: false
+});
+
+if (applicationsError) {
+throw applicationsError;
+}
+
+const loading = document.getElementById('loadingMessage');
+const content = document.getElementById('applicationsContent');
+const list = document.getElementById('applicationList');
+
+if (loading) {
+loading.style.display = 'none';
+}
+
+if (!content || !list) {
+return;
+}
+
+content.style.display = 'block';
+
+if (!applications || applications.length === 0) {
+list.innerHTML = ` <div class="card"> <h3>No applications yet</h3> <p>
+You have not applied for any jobs yet. </p>
+
+```
+    <a
+      class="btn blue"
+      href="jobs.html"
+    >
+      Find Jobs
+    </a>
+  </div>
+`;
+
+return;
+```
+
+}
+
+const jobIds = [
+...new Set(
+applications
+.map(application => application.job_id)
+.filter(Boolean)
+)
+];
+
+const {
+data: jobs,
+error: jobsError
+} = await sb
+.from('jobs')
+.select(
+'id, title, location, country, employment_type, experience_required, company_id'
+)
+.in('id', jobIds);
+
+if (jobsError) {
+throw jobsError;
+}
+
+const jobMap = new Map(
+(jobs || []).map(job => [
+job.id,
+job
+])
+);
+
+const companyIds = [
+...new Set(
+(jobs || [])
+.map(job => job.company_id)
+.filter(Boolean)
+)
+];
+
+const companyMap = new Map();
+
+if (companyIds.length > 0) {
+const {
+data: companies,
+error: companiesError
+} = await sb
+.from('companies')
+.select('id, company_name')
+.in('id', companyIds);
+
+```
+if (!companiesError && companies) {
+  companies.forEach(company => {
+    companyMap.set(
+      company.id,
+      company.company_name
     );
+  });
+}
+```
 
-  if (!list) {
-    return;
-  }
+}
 
-  list.innerHTML = `
-    <div class="empty-state">
+list.innerHTML = applications.map(application => {
+const job = jobMap.get(application.job_id);
 
-      <h2>Sign in required</h2>
+```
+if (!job) {
+  return `
+    <div class="card">
+      <h3>Job no longer available</h3>
 
       <p>
-        Please sign in to view your job applications.
+        Applied:
+        ${escapeHtml(
+          formatDate(application.created_at)
+        )}
       </p>
 
-      <div class="application-actions">
+      <p>
+        Status:
+        <strong>
+          ${escapeHtml(
+            statusLabel(application.status)
+          )}
+        </strong>
+      </p>
+    </div>
+  `;
+}
 
-        <button
-          type="button"
-          class="btn blue"
-          id="applicationsLoginButton"
-        >
-          Sign In
-        </button>
+const companyName =
+  companyMap.get(job.company_id) ||
+  'Rolling Mill World employer';
 
-        <a
-          href="jobs.html"
-          class="btn gray"
-        >
-          Find Jobs
-        </a>
+const location = [
+  job.location,
+  job.country
+]
+  .filter(Boolean)
+  .join(', ');
 
+return `
+  <div class="card applicationCard">
+
+    <div class="applicationHeader">
+
+      <div>
+        <h3>
+          ${escapeHtml(job.title)}
+        </h3>
+
+        <p>
+          ${escapeHtml(companyName)}
+        </p>
+      </div>
+
+      <div class="applicationStatus">
+        ${escapeHtml(
+          statusLabel(application.status)
+        )}
       </div>
 
     </div>
-  `;
 
-  const button =
-    document.getElementById(
-      'applicationsLoginButton'
-    );
+    <div class="applicationMeta">
 
-  if (button) {
-    button.addEventListener(
-      'click',
-      function () {
-
-        if (
-          typeof openAuth === 'function'
-        ) {
-          openAuth('login');
-        } else {
-          console.error(
-            'openAuth() is not available.'
-          );
-        }
-
+      ${
+        location
+          ? `
+            <span>
+              <strong>Location:</strong>
+              ${escapeHtml(location)}
+            </span>
+          `
+          : ''
       }
-    );
-  }
-}
 
-function renderNoProfile() {
-  const list =
-    document.getElementById(
-      'applicationList'
-    );
+      ${
+        job.employment_type
+          ? `
+            <span>
+              <strong>Employment:</strong>
+              ${escapeHtml(job.employment_type)}
+            </span>
+          `
+          : ''
+      }
 
-  if (!list) {
-    return;
-  }
+      ${
+        job.experience_required
+          ? `
+            <span>
+              <strong>Experience:</strong>
+              ${escapeHtml(job.experience_required)}
+            </span>
+          `
+          : ''
+      }
 
-  list.innerHTML = `
-    <div class="empty-state">
+      <span>
+        <strong>Applied:</strong>
+        ${escapeHtml(
+          formatDate(application.created_at)
+        )}
+      </span>
 
-      <h2>Job seeker profile required</h2>
+    </div>
 
-      <p>
-        Create your job seeker profile before applying
-        for jobs.
-      </p>
+    <div class="applicationActions">
 
       <a
-        href="job-seeker.html"
         class="btn blue"
+        href="job-details.html?id=${encodeURIComponent(job.id)}"
       >
-        Create Job Seeker Profile
+        View Job
       </a>
 
     </div>
-  `;
+
+  </div>
+`;
+```
+
+}).join('');
 }
 
-function renderEmptyApplications() {
-  const list =
-    document.getElementById(
-      'applicationList'
-    );
+async function initializeMyApplications() {
+const loading = document.getElementById('loadingMessage');
 
-  if (!list) {
-    return;
-  }
-
-  list.innerHTML = `
-    <div class="empty-state">
-
-      <h2>No applications yet</h2>
-
-      <p>
-        You have not applied for any jobs yet.
-      </p>
-
-      <a
-        href="jobs.html"
-        class="btn blue"
-      >
-        Find Jobs
-      </a>
-
-    </div>
-  `;
+if (loading) {
+loading.style.display = 'block';
 }
 
-async function loadApplications() {
+showMessage('');
 
-  const { data, error } =
-    await applicationsSupabase
-      .from('job_applications')
-      .select(`
-        id,
-        job_id,
-        status,
-        created_at
-      `)
-      .eq(
-        'job_seeker_id',
-        currentJobSeeker.id
-      )
-      .order(
-        'created_at',
-        {
-          ascending: false
-        }
-      );
+try {
+await loadMyApplications();
+} catch (error) {
+console.error(
+'My Applications error:',
+error
+);
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  if (!data || data.length === 0) {
-    renderEmptyApplications();
-    return;
-  }
-
-  const jobIds =
-    data.map(
-      application => application.job_id
-    );
-
-  const { data: jobs, error: jobsError } =
-    await applicationsSupabase
-      .from('jobs')
-      .select(`
-        id,
-        title,
-        location,
-        country,
-        employment_type,
-        company_id
-      `)
-      .in(
-        'id',
-        jobIds
-      );
-
-  if (jobsError) {
-    throw new Error(
-      jobsError.message
-    );
-  }
-
-  const jobMap =
-    new Map(
-      (jobs || []).map(
-        job => [job.id, job]
-      )
-    );
-
-  const companyIds =
-    (jobs || [])
-      .map(job => job.company_id)
-      .filter(Boolean);
-
-  let companies = [];
-
-  if (companyIds.length > 0) {
-
-    const { data: companyData, error: companyError } =
-      await applicationsSupabase
-        .from('companies')
-        .select(`
-          id,
-          company_name
-        `)
-        .in(
-          'id',
-          companyIds
-        );
-
-    if (companyError) {
-      throw new Error(
-        companyError.message
-      );
-    }
-
-    companies =
-      companyData || [];
-  }
-
-  const companyMap =
-    new Map(
-      companies.map(
-        company => [
-          company.id,
-          company.company_name
-        ]
-      )
-    );
-
-  const list =
-    document.getElementById(
-      'applicationList'
-    );
-
-  if (!list) {
-    return;
-  }
-
-  list.innerHTML =
-    data.map(
-      application => {
-
-        const job =
-          jobMap.get(
-            application.job_id
-          );
-
-        if (!job) {
-          return `
-            <div class="application-item">
-
-              <h2>Job no longer available</h2>
-
-              <div class="application-meta">
-                <div>
-                  <strong>Status:</strong>
-                  <span class="application-status">
-                    ${escapeHtml(
-                      application.status ||
-                      'submitted'
-                    )}
-                  </span>
-                </div>
-
-                <div>
-                  <strong>Applied:</strong>
-                  ${escapeHtml(
-                    formatDate(
-                      application.created_at
-                    )
-                  )}
-                </div>
-              </div>
-
-            </div>
-          `;
-        }
-
-        const companyName =
-          companyMap.get(
-            job.company_id
-          ) ||
-          'Company not specified';
-
-        return `
-          <div class="application-item">
-
-            <h2>
-              ${escapeHtml(
-                job.title ||
-                'Untitled Job'
-              )}
-            </h2>
-
-            <div class="application-company">
-              ${escapeHtml(
-                companyName
-              )}
-            </div>
-
-            <div class="application-meta">
-
-              <div>
-                <strong>Location:</strong>
-                ${escapeHtml(
-                  [
-                    job.location,
-                    job.country
-                  ]
-                    .filter(Boolean)
-                    .join(', ') ||
-                  'Not specified'
-                )}
-              </div>
-
-              <div>
-                <strong>Employment:</strong>
-                ${escapeHtml(
-                  job.employment_type ||
-                  'Not specified'
-                )}
-              </div>
-
-              <div>
-                <strong>Applied:</strong>
-                ${escapeHtml(
-                  formatDate(
-                    application.created_at
-                  )
-                )}
-              </div>
-
-              <div>
-                <strong>Status:</strong>
-                <span class="application-status">
-                  ${escapeHtml(
-                    application.status ||
-                    'submitted'
-                  )}
-                </span>
-              </div>
-
-            </div>
-
-            <div class="application-actions">
-
-              <a
-                href="job-details.html?id=${encodeURIComponent(
-                  job.id
-                )}"
-                class="btn blue"
-              >
-                View Job
-              </a>
-
-            </div>
-
-          </div>
-        `;
-      }
-    ).join('');
+```
+if (loading) {
+  loading.style.display = 'none';
 }
 
-async function initialize() {
-  try {
+showMessage(
+  error.message ||
+  'Could not load your applications.'
+);
+```
 
-    await initializeSupabase();
-
-    currentUser =
-      await getCurrentUser();
-
-    if (!currentUser) {
-      showContent();
-      renderNotSignedIn();
-      return;
-    }
-
-    currentJobSeeker =
-      await loadJobSeeker();
-
-    if (!currentJobSeeker) {
-      showContent();
-      renderNoProfile();
-      return;
-    }
-
-    await loadApplications();
-
-    showContent();
-
-  } catch (error) {
-
-    console.error(
-      'My applications page error:',
-      error
-    );
-
-    showContent();
-
-    showError(
-      error.message ||
-      'Could not load your applications.'
-    );
-  }
+}
 }
 
 document.addEventListener(
-  'DOMContentLoaded',
-  function () {
-    initialize();
-  }
-);
+'DOMContentLoaded',
+async () => {
 
+```
+await refreshAuthUI();
+
+await initializeMyApplications();
+
+try {
+  const sb = await getSupabaseClient();
+
+  sb.auth.onAuthStateChange(
+    async (event, session) => {
+
+      if (
+        event === 'SIGNED_IN' &&
+        session
+      ) {
+        await initializeMyApplications();
+      }
+
+      if (event === 'SIGNED_OUT') {
+        window.location.reload();
+      }
+    }
+  );
+
+} catch (error) {
+  console.error(
+    'Could not initialize auth listener:',
+    error
+  );
+}
+```
+
+}
+);
