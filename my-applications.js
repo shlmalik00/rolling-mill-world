@@ -30,18 +30,35 @@ return value.charAt(0).toUpperCase() +
 value.slice(1);
 }
 
-function showMessage(message, type = '') {
+function setLoading(message) {
+const el = document.getElementById('loadingMessage');
+
+if (el) {
+el.textContent = message;
+el.style.display = 'block';
+}
+}
+
+function hideLoading() {
+const el = document.getElementById('loadingMessage');
+
+if (el) {
+el.style.display = 'none';
+}
+}
+
+function showMessage(message) {
 const el = document.getElementById('statusMessage');
 
 if (!el) return;
 
 el.textContent = message;
-el.className = type
-? `statusMessage ${type}`
-: 'statusMessage';
+el.className = 'statusMessage';
 }
 
 async function loadMyApplications() {
+setLoading('Checking your sign-in...');
+
 const sb = await getSupabaseClient();
 
 const {
@@ -60,14 +77,22 @@ console.log(
 session ? 'SIGNED IN' : 'SIGNED OUT'
 );
 
-if (!session || !session.user) {
+if (!session?.user) {
+hideLoading();
+
+
 showMessage(
-'Please sign in to view your job applications.'
+  'Please sign in to view your job applications.'
 );
+
 return;
+
+
 }
 
 const user = session.user;
+
+setLoading('Loading your Job Seeker profile...');
 
 const {
 data: seeker,
@@ -82,12 +107,25 @@ if (seekerError) {
 throw seekerError;
 }
 
-if (!seeker) {
-showMessage(
-'Please complete your Job Seeker profile before viewing applications.'
+console.log(
+'Job seeker:',
+seeker
 );
+
+if (!seeker) {
+hideLoading();
+
+
+showMessage(
+  'No Job Seeker profile was found for this account.'
+);
+
 return;
+
+
 }
+
+setLoading('Loading your applications...');
 
 const {
 data: applications,
@@ -106,25 +144,35 @@ if (applicationsError) {
 throw applicationsError;
 }
 
-const loading = document.getElementById('loadingMessage');
-const content = document.getElementById('applicationsContent');
-const list = document.getElementById('applicationList');
+console.log(
+'Applications:',
+applications
+);
 
-if (loading) {
-loading.style.display = 'none';
-}
+const content =
+document.getElementById('applicationsContent');
+
+const list =
+document.getElementById('applicationList');
+
+hideLoading();
 
 if (!content || !list) {
-return;
+throw new Error(
+'Application page elements were not found.'
+);
 }
 
 content.style.display = 'block';
 
 if (!applications || applications.length === 0) {
-list.innerHTML = ` <div class="card"> <h3>No applications yet</h3> <p>
-You have not applied for any jobs yet. </p>
+list.innerHTML = ` <div class="card"> <h3>No applications yet</h3>
 
-```
+
+    <p>
+      You have not applied for any jobs yet.
+    </p>
+
     <a
       class="btn blue"
       href="jobs.html"
@@ -135,9 +183,11 @@ You have not applied for any jobs yet. </p>
 `;
 
 return;
-```
+
 
 }
+
+setLoading('Loading job information...');
 
 const jobIds = [
 ...new Set(
@@ -161,6 +211,11 @@ if (jobsError) {
 throw jobsError;
 }
 
+console.log(
+'Jobs:',
+jobs
+);
+
 const jobMap = new Map(
 (jobs || []).map(job => [
 job.id,
@@ -179,15 +234,17 @@ const companyIds = [
 const companyMap = new Map();
 
 if (companyIds.length > 0) {
-const {
-data: companies,
-error: companiesError
-} = await sb
-.from('companies')
-.select('id, company_name')
-.in('id', companyIds);
+setLoading('Loading company information...');
 
-```
+
+const {
+  data: companies,
+  error: companiesError
+} = await sb
+  .from('companies')
+  .select('id, company_name')
+  .in('id', companyIds);
+
 if (!companiesError && companies) {
   companies.forEach(company => {
     companyMap.set(
@@ -196,14 +253,17 @@ if (!companiesError && companies) {
     );
   });
 }
-```
+
 
 }
 
+hideLoading();
+
 list.innerHTML = applications.map(application => {
+
+
 const job = jobMap.get(application.job_id);
 
-```
 if (!job) {
   return `
     <div class="card">
@@ -319,38 +379,34 @@ return `
 
   </div>
 `;
-```
+
 
 }).join('');
 }
 
 async function initializeMyApplications() {
-const loading = document.getElementById('loadingMessage');
-
-if (loading) {
-loading.style.display = 'block';
-}
-
+try {
 showMessage('');
 
-try {
+
 await loadMyApplications();
+
+
 } catch (error) {
+
+
 console.error(
-'My Applications error:',
-error
+  'My Applications error:',
+  error
 );
 
-```
-if (loading) {
-  loading.style.display = 'none';
-}
+hideLoading();
 
 showMessage(
   error.message ||
   'Could not load your applications.'
 );
-```
+
 
 }
 }
@@ -359,7 +415,7 @@ document.addEventListener(
 'DOMContentLoaded',
 async () => {
 
-```
+
 await refreshAuthUI();
 
 await initializeMyApplications();
@@ -369,6 +425,11 @@ try {
 
   sb.auth.onAuthStateChange(
     async (event, session) => {
+
+      console.log(
+        'Auth event:',
+        event
+      );
 
       if (
         event === 'SIGNED_IN' &&
@@ -389,7 +450,7 @@ try {
     error
   );
 }
-```
+
 
 }
 );
