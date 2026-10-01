@@ -2,6 +2,8 @@ let applicationSupabase = null;
 let currentJob = null;
 let currentJobSeeker = null;
 let currentUser = null;
+let applicationInitialized = false;
+let authListener = null;
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -53,7 +55,9 @@ async function initializeSupabase() {
     !applicationSupabase ||
     typeof applicationSupabase.from !== 'function'
   ) {
-    throw new Error('Supabase client was not initialized correctly.');
+    throw new Error(
+      'Supabase client was not initialized correctly.'
+    );
   }
 
   return applicationSupabase;
@@ -66,20 +70,21 @@ async function loadJob() {
     throw new Error('No job ID was provided.');
   }
 
-  const { data, error } = await applicationSupabase
-    .from('jobs')
-    .select(`
-      id,
-      title,
-      location,
-      country,
-      employment_type,
-      experience_required,
-      salary_range
-    `)
-    .eq('id', jobId)
-    .eq('status', 'published')
-    .maybeSingle();
+  const { data, error } =
+    await applicationSupabase
+      .from('jobs')
+      .select(`
+        id,
+        title,
+        location,
+        country,
+        employment_type,
+        experience_required,
+        salary_range
+      `)
+      .eq('id', jobId)
+      .eq('status', 'published')
+      .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
@@ -112,14 +117,23 @@ async function loadJob() {
 }
 
 function renderLoginRequired() {
-  const profileArea = document.getElementById('profileArea');
+  const profileArea =
+    document.getElementById('profileArea');
+
+  const applicationForm =
+    document.getElementById('applicationForm');
 
   if (!profileArea) {
     return;
   }
 
+  if (applicationForm) {
+    applicationForm.style.display = 'none';
+  }
+
   profileArea.innerHTML = `
     <div class="profile-warning">
+
       <strong>Sign in required</strong>
 
       <p>
@@ -144,60 +158,27 @@ function renderLoginRequired() {
         </a>
 
       </div>
+
     </div>
   `;
 
   const loginButton =
     document.getElementById('loginButton');
 
-  if (!loginButton) {
-    return;
+  if (loginButton) {
+    loginButton.addEventListener(
+      'click',
+      function () {
+        if (typeof openAuth === 'function') {
+          openAuth('login');
+        } else {
+          console.error(
+            'openAuth() is not available.'
+          );
+        }
+      }
+    );
   }
-
-  loginButton.addEventListener('click', async function () {
-    try {
-      /*
-       * Use the authentication modal supplied by auth.js.
-       * Different versions of auth.js may expose slightly
-       * different function names, so check both.
-       */
-
-      if (typeof openAuth === 'function') {
-        openAuth('login');
-        return;
-      }
-
-      if (typeof openLoginModal === 'function') {
-        openLoginModal();
-        return;
-      }
-
-      if (typeof showAuthModal === 'function') {
-        showAuthModal('login');
-        return;
-      }
-
-      /*
-       * If no modal function exists, send the user to
-       * the main account/login page rather than leaving
-       * the button doing nothing.
-       */
-      window.location.href =
-        'account.html?redirect=' +
-        encodeURIComponent(window.location.href);
-
-    } catch (error) {
-      console.error(
-        'Could not open login:',
-        error
-      );
-
-      alert(
-        error.message ||
-        'Could not open the sign-in window.'
-      );
-    }
-  });
 }
 
 async function checkLogin() {
@@ -209,6 +190,7 @@ async function checkLogin() {
   }
 
   if (!data.session) {
+    currentUser = null;
     renderLoginRequired();
     return false;
   }
@@ -219,6 +201,9 @@ async function checkLogin() {
 }
 
 async function loadProfile() {
+  const profileArea =
+    document.getElementById('profileArea');
+
   const { data, error } =
     await applicationSupabase
       .from('job_seekers')
@@ -236,7 +221,7 @@ async function loadProfile() {
   }
 
   if (!data) {
-    document.getElementById('profileArea').innerHTML = `
+    profileArea.innerHTML = `
       <div class="profile-warning">
 
         <strong>
@@ -273,7 +258,7 @@ async function loadProfile() {
 
   currentJobSeeker = data;
 
-  document.getElementById('profileArea').innerHTML = `
+  profileArea.innerHTML = `
     <div
       class="profile-warning"
       style="background:#f5f7fa;border-color:#ddd;"
@@ -321,9 +306,12 @@ async function checkExistingApplication() {
     return false;
   }
 
-  document.getElementById(
-    'applicationForm'
-  ).style.display = 'none';
+  const applicationForm =
+    document.getElementById('applicationForm');
+
+  if (applicationForm) {
+    applicationForm.style.display = 'none';
+  }
 
   document.getElementById(
     'profileArea'
@@ -365,6 +353,54 @@ async function checkExistingApplication() {
   return true;
 }
 
+function showApplicationForm() {
+  const form =
+    document.getElementById('applicationForm');
+
+  if (form) {
+    form.style.display = 'block';
+  }
+}
+
+async function loadApplicationState() {
+  try {
+    currentJobSeeker = null;
+
+    const loggedIn = await checkLogin();
+
+    if (!loggedIn) {
+      return;
+    }
+
+    const profileLoaded =
+      await loadProfile();
+
+    if (!profileLoaded) {
+      return;
+    }
+
+    const alreadyApplied =
+      await checkExistingApplication();
+
+    if (alreadyApplied) {
+      return;
+    }
+
+    showApplicationForm();
+
+  } catch (error) {
+    console.error(
+      'Could not load application state:',
+      error
+    );
+
+    showError(
+      error.message ||
+      'Could not load your application information.'
+    );
+  }
+}
+
 async function submitApplication(event) {
   event.preventDefault();
 
@@ -388,11 +424,12 @@ async function submitApplication(event) {
       .value
       .trim();
 
-  button.disabled = true;
-  button.textContent = 'Submitting...';
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Submitting...';
+  }
 
   try {
-
     const { error } =
       await applicationSupabase
         .from('job_applications')
@@ -423,9 +460,12 @@ async function submitApplication(event) {
       return;
     }
 
-    document.getElementById(
-      'applicationForm'
-    ).style.display = 'none';
+    const applicationForm =
+      document.getElementById('applicationForm');
+
+    if (applicationForm) {
+      applicationForm.style.display = 'none';
+    }
 
     document.getElementById(
       'profileArea'
@@ -462,52 +502,65 @@ async function submitApplication(event) {
     `;
 
   } finally {
-
-    button.disabled = false;
-    button.textContent = 'Submit Application';
-
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Submit Application';
+    }
   }
 }
 
 function watchForLogin() {
-  /*
-   * Supabase fires SIGNED_IN whenever the user successfully
-   * signs in. When that happens, reload this application page
-   * so it immediately changes from "Sign in required" to
-   * the application form.
-   */
+  if (authListener) {
+    return;
+  }
 
-  applicationSupabase.auth.onAuthStateChange(
-    async function (event, session) {
+  authListener =
+    applicationSupabase.auth.onAuthStateChange(
+      function (event, session) {
 
-      console.log(
-        'Auth state changed:',
-        event
-      );
+        console.log(
+          'Application page auth event:',
+          event
+        );
 
-      if (
-        event === 'SIGNED_IN' &&
-        session &&
-        session.user
-      ) {
-        currentUser = session.user;
+        if (
+          event === 'SIGNED_IN' &&
+          session &&
+          session.user
+        ) {
+          /*
+           * Do NOT reload the page.
+           *
+           * auth.js already closes the login modal.
+           * We simply update this page in place.
+           */
+          currentUser = session.user;
 
-        /*
-         * Small delay allows the auth modal to finish closing
-         * before rebuilding the application page.
-         */
-        setTimeout(function () {
-          window.location.reload();
-        }, 300);
+          setTimeout(
+            async function () {
+              await loadApplicationState();
+            },
+            100
+          );
+        }
+
+        if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          currentJobSeeker = null;
+          renderLoginRequired();
+        }
       }
-
-    }
-  );
+    );
 }
 
 async function initialize() {
-  try {
+  if (applicationInitialized) {
+    return;
+  }
 
+  applicationInitialized = true;
+
+  try {
     await initializeSupabase();
 
     watchForLogin();
@@ -516,33 +569,9 @@ async function initialize() {
 
     showContent();
 
-    const loggedIn =
-      await checkLogin();
-
-    if (!loggedIn) {
-      return;
-    }
-
-    const profileLoaded =
-      await loadProfile();
-
-    if (!profileLoaded) {
-      return;
-    }
-
-    const alreadyApplied =
-      await checkExistingApplication();
-
-    if (alreadyApplied) {
-      return;
-    }
-
-    document.getElementById(
-      'applicationForm'
-    ).style.display = 'block';
+    await loadApplicationState();
 
   } catch (error) {
-
     console.error(
       'Application page error:',
       error
@@ -573,4 +602,5 @@ document.addEventListener(
 
   }
 );
+
 
