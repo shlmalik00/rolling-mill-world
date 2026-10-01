@@ -1,42 +1,4 @@
-console.log('MY APPLICATIONS JS v13 LOADED');
-
-var myApplicationsSupabase = null;
-
-async function getMyApplicationsSupabase() {
-if (myApplicationsSupabase) {
-return myApplicationsSupabase;
-}
-
-var response = await fetch('/api/config');
-
-if (!response.ok) {
-throw new Error(
-'Could not load Supabase configuration.'
-);
-}
-
-var config = await response.json();
-
-if (!config.url || !config.key) {
-throw new Error(
-'Supabase configuration is missing.'
-);
-}
-
-if (!window.supabase) {
-throw new Error(
-'Supabase library did not load.'
-);
-}
-
-myApplicationsSupabase =
-window.supabase.createClient(
-config.url,
-config.key
-);
-
-return myApplicationsSupabase;
-}
+console.log('MY APPLICATIONS JS v15 LOADED');
 
 document.addEventListener(
 'DOMContentLoaded',
@@ -48,7 +10,32 @@ console.log(
 );
 
 try {
+  await refreshAuthUI();
+
   await loadMyApplications();
+
+  var sb = await getSupabaseClient();
+
+  sb.auth.onAuthStateChange(
+    async function (event, session) {
+
+      console.log(
+        'AUTH EVENT:',
+        event
+      );
+
+      if (
+        event === 'SIGNED_IN' &&
+        session
+      ) {
+        await loadMyApplications();
+      }
+
+      if (event === 'SIGNED_OUT') {
+        await loadMyApplications();
+      }
+    }
+  );
 
 } catch (error) {
 
@@ -57,25 +44,12 @@ try {
     error
   );
 
-  var loading =
-    document.getElementById(
-      'loadingMessage'
-    );
+  hideLoading();
 
-  if (loading) {
-    loading.style.display = 'none';
-  }
-
-  var message =
-    document.getElementById(
-      'statusMessage'
-    );
-
-  if (message) {
-    message.textContent =
-      error.message ||
-      'Could not load your applications.';
-  }
+  showStatus(
+    error.message ||
+    'Could not load your applications.'
+  );
 }
 
 
@@ -92,25 +66,25 @@ document.getElementById(
 if (loading) {
 loading.textContent =
 'Checking your sign-in...';
+
+
 loading.style.display = 'block';
+
+
 }
 
 var sb =
-await getMyApplicationsSupabase();
+await getSupabaseClient();
 
-console.log(
-'SUPABASE CLIENT READY'
-);
-
-var sessionResult =
+var result =
 await sb.auth.getSession();
 
-if (sessionResult.error) {
-throw sessionResult.error;
+if (result.error) {
+throw result.error;
 }
 
 var session =
-sessionResult.data.session;
+result.data.session;
 
 console.log(
 'SESSION:',
@@ -120,25 +94,18 @@ session ? 'SIGNED IN' : 'SIGNED OUT'
 if (!session) {
 
 
-if (loading) {
-  loading.style.display = 'none';
-}
+hideLoading();
 
-var message =
-  document.getElementById(
-    'statusMessage'
-  );
-
-if (message) {
-  message.innerHTML =
-    'Please sign in to view your job applications.' +
-    ' <a href="javascript:openApplicationsLogin()">Sign In</a>';
-}
+showStatus(
+  'Please sign in to view your job applications.'
+);
 
 return;
 
 
 }
+
+clearStatus();
 
 if (loading) {
 loading.textContent =
@@ -172,19 +139,11 @@ seeker
 if (!seeker) {
 
 
-if (loading) {
-  loading.style.display = 'none';
-}
+hideLoading();
 
-var profileMessage =
-  document.getElementById(
-    'statusMessage'
-  );
-
-if (profileMessage) {
-  profileMessage.textContent =
-    'No Job Seeker profile was found for this account.';
-}
+showStatus(
+  'No Job Seeker profile was found for this account.'
+);
 
 return;
 
@@ -225,9 +184,7 @@ console.log(
 applications
 );
 
-if (loading) {
-loading.style.display = 'none';
-}
+hideLoading();
 
 var content =
 document.getElementById(
@@ -382,12 +339,52 @@ function (application) {
 
 }
 
-function openApplicationsLogin() {
+function showStatus(message) {
 
-alert(
-'Please use My Account to sign in, then return to My Applications.'
+var element =
+document.getElementById(
+'statusMessage'
 );
 
-window.location.href =
-'account.html';
+if (!element) {
+return;
+}
+
+element.innerHTML =
+message +
+' ' +
+'<button type="button" ' +
+'class="btn blue" ' +
+'onclick="openAuth('login')">' +
+'Sign In' +
+'</button>';
+
+element.style.display = 'block';
+}
+
+function clearStatus() {
+
+var element =
+document.getElementById(
+'statusMessage'
+);
+
+if (!element) {
+return;
+}
+
+element.innerHTML = '';
+element.style.display = 'none';
+}
+
+function hideLoading() {
+
+var element =
+document.getElementById(
+'loadingMessage'
+);
+
+if (element) {
+element.style.display = 'none';
+}
 }
