@@ -1,3 +1,60 @@
+console.log('MY APPLICATIONS JS v16 LOADED');
+
+document.addEventListener(
+  'DOMContentLoaded',
+  async function () {
+
+    console.log(
+      'MY APPLICATIONS DOM READY'
+    );
+
+    try {
+
+      await refreshAuthUI();
+
+      await loadMyApplications();
+
+      var sb =
+        await getSupabaseClient();
+
+      sb.auth.onAuthStateChange(
+        async function (event, session) {
+
+          console.log(
+            'AUTH EVENT:',
+            event
+          );
+
+          if (
+            event === 'SIGNED_IN' &&
+            session
+          ) {
+            await loadMyApplications();
+          }
+
+          if (event === 'SIGNED_OUT') {
+            await loadMyApplications();
+          }
+
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        'MY APPLICATIONS ERROR:',
+        error
+      );
+
+      hideLoading();
+
+      showStatus(
+        error.message ||
+        'Could not load your applications.'
+      );
+    }
+  }
+);
 function showStatus(message) {
 
 var element =
