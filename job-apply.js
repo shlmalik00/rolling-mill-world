@@ -111,6 +111,95 @@ async function loadJob() {
     data.salary_range || 'Not specified';
 }
 
+function renderLoginRequired() {
+  const profileArea = document.getElementById('profileArea');
+
+  if (!profileArea) {
+    return;
+  }
+
+  profileArea.innerHTML = `
+    <div class="profile-warning">
+      <strong>Sign in required</strong>
+
+      <p>
+        Please sign in before applying for this job.
+      </p>
+
+      <div class="apply-actions">
+
+        <button
+          type="button"
+          class="btn blue"
+          id="loginButton"
+        >
+          Sign In
+        </button>
+
+        <a
+          href="jobs.html"
+          class="btn gray"
+        >
+          Back to Find Jobs
+        </a>
+
+      </div>
+    </div>
+  `;
+
+  const loginButton =
+    document.getElementById('loginButton');
+
+  if (!loginButton) {
+    return;
+  }
+
+  loginButton.addEventListener('click', async function () {
+    try {
+      /*
+       * Use the authentication modal supplied by auth.js.
+       * Different versions of auth.js may expose slightly
+       * different function names, so check both.
+       */
+
+      if (typeof openAuth === 'function') {
+        openAuth('login');
+        return;
+      }
+
+      if (typeof openLoginModal === 'function') {
+        openLoginModal();
+        return;
+      }
+
+      if (typeof showAuthModal === 'function') {
+        showAuthModal('login');
+        return;
+      }
+
+      /*
+       * If no modal function exists, send the user to
+       * the main account/login page rather than leaving
+       * the button doing nothing.
+       */
+      window.location.href =
+        'account.html?redirect=' +
+        encodeURIComponent(window.location.href);
+
+    } catch (error) {
+      console.error(
+        'Could not open login:',
+        error
+      );
+
+      alert(
+        error.message ||
+        'Could not open the sign-in window.'
+      );
+    }
+  });
+}
+
 async function checkLogin() {
   const { data, error } =
     await applicationSupabase.auth.getSession();
@@ -120,43 +209,7 @@ async function checkLogin() {
   }
 
   if (!data.session) {
-    document.getElementById('profileArea').innerHTML = `
-      <div class="profile-warning">
-        <strong>Sign in required</strong>
-        <p>Please sign in before applying for this job.</p>
-
-        <div class="apply-actions">
-          <button
-            type="button"
-            class="btn blue"
-            id="loginButton"
-          >
-            Sign In
-          </button>
-
-          <a href="jobs.html" class="btn gray">
-            Back to Find Jobs
-          </a>
-        </div>
-      </div>
-    `;
-
-    const loginButton =
-      document.getElementById('loginButton');
-
-    if (loginButton) {
-      loginButton.addEventListener(
-        'click',
-        function () {
-          if (typeof openAuth === 'function') {
-            openAuth('login');
-          } else {
-            window.location.href = 'index.html';
-          }
-        }
-      );
-    }
-
+    renderLoginRequired();
     return false;
   }
 
@@ -185,21 +238,33 @@ async function loadProfile() {
   if (!data) {
     document.getElementById('profileArea').innerHTML = `
       <div class="profile-warning">
-        <strong>Job seeker profile required</strong>
+
+        <strong>
+          Job seeker profile required
+        </strong>
 
         <p>
           Create your job seeker profile before applying.
         </p>
 
         <div class="apply-actions">
-          <a href="job-seeker.html" class="btn blue">
+
+          <a
+            href="job-seeker.html"
+            class="btn blue"
+          >
             Create Profile
           </a>
 
-          <a href="jobs.html" class="btn gray">
+          <a
+            href="jobs.html"
+            class="btn gray"
+          >
             Back to Find Jobs
           </a>
+
         </div>
+
       </div>
     `;
 
@@ -213,6 +278,7 @@ async function loadProfile() {
       class="profile-warning"
       style="background:#f5f7fa;border-color:#ddd;"
     >
+
       <strong>
         Applying as
         ${escapeHtml(data.full_name || 'Job Seeker')}
@@ -231,6 +297,7 @@ async function loadProfile() {
             : 'No resume uploaded'
         }
       </p>
+
     </div>
   `;
 
@@ -264,7 +331,10 @@ async function checkExistingApplication() {
     'afterend',
     `
       <div class="profile-warning">
-        <strong>Application already submitted</strong>
+
+        <strong>
+          Application already submitted
+        </strong>
 
         <p>
           You have already applied for this job.
@@ -278,10 +348,16 @@ async function checkExistingApplication() {
         </p>
 
         <div class="apply-actions">
-          <a href="jobs.html" class="btn blue">
+
+          <a
+            href="jobs.html"
+            class="btn blue"
+          >
             Find More Jobs
           </a>
+
         </div>
+
       </div>
     `
   );
@@ -291,6 +367,18 @@ async function checkExistingApplication() {
 
 async function submitApplication(event) {
   event.preventDefault();
+
+  if (!currentUser) {
+    renderLoginRequired();
+    return;
+  }
+
+  if (!currentJobSeeker) {
+    showError(
+      'Please create your job seeker profile first.'
+    );
+    return;
+  }
 
   const button =
     document.getElementById('submitApplication');
@@ -303,83 +391,140 @@ async function submitApplication(event) {
   button.disabled = true;
   button.textContent = 'Submitting...';
 
-  const { error } =
-    await applicationSupabase
-      .from('job_applications')
-      .insert({
-        job_id: currentJob.id,
-        job_seeker_id: currentJobSeeker.id,
-        cover_message: coverMessage || null,
-        status: 'submitted'
-      });
+  try {
 
-  if (error) {
-    console.error(
-      'APPLICATION INSERT ERROR:',
-      error
-    );
+    const { error } =
+      await applicationSupabase
+        .from('job_applications')
+        .insert({
+          job_id: currentJob.id,
+          job_seeker_id: currentJobSeeker.id,
+          cover_message: coverMessage || null,
+          status: 'submitted'
+        });
 
-    if (error.code === '23505') {
-      showError(
-        'You have already applied for this job.'
+    if (error) {
+      console.error(
+        'APPLICATION INSERT ERROR:',
+        error
       );
-    } else {
-      showError(
-        error.message ||
-        'Unable to submit application.'
-      );
+
+      if (error.code === '23505') {
+        showError(
+          'You have already applied for this job.'
+        );
+      } else {
+        showError(
+          error.message ||
+          'Unable to submit application.'
+        );
+      }
+
+      return;
     }
+
+    document.getElementById(
+      'applicationForm'
+    ).style.display = 'none';
+
+    document.getElementById(
+      'profileArea'
+    ).innerHTML = `
+      <div class="status-message show success">
+
+        <strong>
+          Application submitted successfully.
+        </strong>
+
+        <p>
+          Your application has been sent for this position.
+        </p>
+
+        <div class="apply-actions">
+
+          <a
+            href="jobs.html"
+            class="btn blue"
+          >
+            Find More Jobs
+          </a>
+
+          <a
+            href="job-seeker.html"
+            class="btn gray"
+          >
+            View My Profile
+          </a>
+
+        </div>
+
+      </div>
+    `;
+
+  } finally {
 
     button.disabled = false;
     button.textContent = 'Submit Application';
 
-    return;
   }
+}
 
-  document.getElementById(
-    'applicationForm'
-  ).style.display = 'none';
+function watchForLogin() {
+  /*
+   * Supabase fires SIGNED_IN whenever the user successfully
+   * signs in. When that happens, reload this application page
+   * so it immediately changes from "Sign in required" to
+   * the application form.
+   */
 
-  document.getElementById(
-    'profileArea'
-  ).innerHTML = `
-    <div class="status-message show success">
-      <strong>
-        Application submitted successfully.
-      </strong>
+  applicationSupabase.auth.onAuthStateChange(
+    async function (event, session) {
 
-      <p>
-        Your application has been sent for this position.
-      </p>
+      console.log(
+        'Auth state changed:',
+        event
+      );
 
-      <div class="apply-actions">
-        <a href="jobs.html" class="btn blue">
-          Find More Jobs
-        </a>
+      if (
+        event === 'SIGNED_IN' &&
+        session &&
+        session.user
+      ) {
+        currentUser = session.user;
 
-        <a href="job-seeker.html" class="btn gray">
-          View My Profile
-        </a>
-      </div>
-    </div>
-  `;
+        /*
+         * Small delay allows the auth modal to finish closing
+         * before rebuilding the application page.
+         */
+        setTimeout(function () {
+          window.location.reload();
+        }, 300);
+      }
+
+    }
+  );
 }
 
 async function initialize() {
   try {
+
     await initializeSupabase();
+
+    watchForLogin();
 
     await loadJob();
 
     showContent();
 
-    const loggedIn = await checkLogin();
+    const loggedIn =
+      await checkLogin();
 
     if (!loggedIn) {
       return;
     }
 
-    const profileLoaded = await loadProfile();
+    const profileLoaded =
+      await loadProfile();
 
     if (!profileLoaded) {
       return;
@@ -397,6 +542,7 @@ async function initialize() {
     ).style.display = 'block';
 
   } catch (error) {
+
     console.error(
       'Application page error:',
       error
@@ -424,6 +570,7 @@ document.addEventListener(
     }
 
     initialize();
+
   }
 );
 
