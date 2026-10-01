@@ -2,7 +2,9 @@ let applicationSupabase = null;
 let currentJob = null;
 let currentJobSeeker = null;
 let currentUser = null;
+
 let applicationInitialized = false;
+let applicationStateLoading = false;
 let authListener = null;
 
 function escapeHtml(value) {
@@ -19,8 +21,11 @@ function getJobId() {
 }
 
 function showContent() {
-  const loading = document.getElementById('loadingMessage');
-  const content = document.getElementById('applicationContent');
+  const loading =
+    document.getElementById('loadingMessage');
+
+  const content =
+    document.getElementById('applicationContent');
 
   if (loading) {
     loading.style.display = 'none';
@@ -34,22 +39,32 @@ function showContent() {
 function showError(message) {
   showContent();
 
-  const status = document.getElementById('statusMessage');
+  const status =
+    document.getElementById('statusMessage');
 
   if (status) {
     status.textContent = 'ERROR: ' + message;
-    status.className = 'status-message show error';
+    status.className =
+      'status-message show error';
   }
 
-  console.error('JOB APPLY ERROR:', message);
+  console.error(
+    'JOB APPLY ERROR:',
+    message
+  );
 }
 
 async function initializeSupabase() {
-  if (typeof getSupabaseClient !== 'function') {
-    throw new Error('auth.js did not load correctly.');
+  if (
+    typeof getSupabaseClient !== 'function'
+  ) {
+    throw new Error(
+      'auth.js did not load correctly.'
+    );
   }
 
-  applicationSupabase = await getSupabaseClient();
+  applicationSupabase =
+    await getSupabaseClient();
 
   if (
     !applicationSupabase ||
@@ -67,7 +82,9 @@ async function loadJob() {
   const jobId = getJobId();
 
   if (!jobId) {
-    throw new Error('No job ID was provided.');
+    throw new Error(
+      'No job ID was provided.'
+    );
   }
 
   const { data, error } =
@@ -98,22 +115,73 @@ async function loadJob() {
 
   currentJob = data;
 
-  document.getElementById('jobTitle').textContent =
-    data.title || 'Untitled Job';
+  const title =
+    document.getElementById('jobTitle');
 
-  document.getElementById('jobLocation').textContent =
-    [data.location, data.country]
-      .filter(Boolean)
-      .join(', ') || 'Not specified';
+  const location =
+    document.getElementById('jobLocation');
 
-  document.getElementById('jobEmployment').textContent =
-    data.employment_type || 'Not specified';
+  const employment =
+    document.getElementById('jobEmployment');
 
-  document.getElementById('jobExperience').textContent =
-    data.experience_required || 'Not specified';
+  const experience =
+    document.getElementById('jobExperience');
 
-  document.getElementById('jobSalary').textContent =
-    data.salary_range || 'Not specified';
+  const salary =
+    document.getElementById('jobSalary');
+
+  if (title) {
+    title.textContent =
+      data.title || 'Untitled Job';
+  }
+
+  if (location) {
+    location.textContent =
+      [data.location, data.country]
+        .filter(Boolean)
+        .join(', ') ||
+      'Not specified';
+  }
+
+  if (employment) {
+    employment.textContent =
+      data.employment_type ||
+      'Not specified';
+  }
+
+  if (experience) {
+    experience.textContent =
+      data.experience_required ||
+      'Not specified';
+  }
+
+  if (salary) {
+    salary.textContent =
+      data.salary_range ||
+      'Not specified';
+  }
+}
+
+function clearApplicationExtraMessages() {
+  const profileArea =
+    document.getElementById('profileArea');
+
+  if (!profileArea) {
+    return;
+  }
+
+  /*
+   * Remove any previously-created duplicate
+   * application status boxes.
+   */
+  profileArea
+    .parentNode
+    ?.querySelectorAll(
+      '.duplicate-application-status'
+    )
+    .forEach(function (element) {
+      element.remove();
+    });
 }
 
 function renderLoginRequired() {
@@ -128,13 +196,18 @@ function renderLoginRequired() {
   }
 
   if (applicationForm) {
-    applicationForm.style.display = 'none';
+    applicationForm.style.display =
+      'none';
   }
+
+  clearApplicationExtraMessages();
 
   profileArea.innerHTML = `
     <div class="profile-warning">
 
-      <strong>Sign in required</strong>
+      <strong>
+        Sign in required
+      </strong>
 
       <p>
         Please sign in before applying for this job.
@@ -169,13 +242,17 @@ function renderLoginRequired() {
     loginButton.addEventListener(
       'click',
       function () {
-        if (typeof openAuth === 'function') {
+
+        if (
+          typeof openAuth === 'function'
+        ) {
           openAuth('login');
         } else {
           console.error(
             'openAuth() is not available.'
           );
         }
+
       }
     );
   }
@@ -191,11 +268,14 @@ async function checkLogin() {
 
   if (!data.session) {
     currentUser = null;
+
     renderLoginRequired();
+
     return false;
   }
 
-  currentUser = data.session.user;
+  currentUser =
+    data.session.user;
 
   return true;
 }
@@ -203,6 +283,12 @@ async function checkLogin() {
 async function loadProfile() {
   const profileArea =
     document.getElementById('profileArea');
+
+  if (!profileArea) {
+    throw new Error(
+      'Profile area was not found.'
+    );
+  }
 
   const { data, error } =
     await applicationSupabase
@@ -221,6 +307,9 @@ async function loadProfile() {
   }
 
   if (!data) {
+
+    currentJobSeeker = null;
+
     profileArea.innerHTML = `
       <div class="profile-warning">
 
@@ -266,12 +355,16 @@ async function loadProfile() {
 
       <strong>
         Applying as
-        ${escapeHtml(data.full_name || 'Job Seeker')}
+        ${escapeHtml(
+          data.full_name ||
+          'Job Seeker'
+        )}
       </strong>
 
       <p>
         ${escapeHtml(
-          data.professional_title || 'Job Seeker'
+          data.professional_title ||
+          'Job Seeker'
         )}
       </p>
 
@@ -290,83 +383,151 @@ async function loadProfile() {
 }
 
 async function checkExistingApplication() {
+  if (
+    !currentJob ||
+    !currentJobSeeker
+  ) {
+    return false;
+  }
+
   const { data, error } =
     await applicationSupabase
       .from('job_applications')
-      .select('id,status,created_at')
-      .eq('job_id', currentJob.id)
-      .eq('job_seeker_id', currentJobSeeker.id)
+      .select(
+        'id,status,created_at'
+      )
+      .eq(
+        'job_id',
+        currentJob.id
+      )
+      .eq(
+        'job_seeker_id',
+        currentJobSeeker.id
+      )
       .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
   }
 
+  /*
+   * Always remove an old status box before
+   * rendering a new one.
+   */
+  clearApplicationExtraMessages();
+
   if (!data) {
     return false;
   }
 
   const applicationForm =
-    document.getElementById('applicationForm');
+    document.getElementById(
+      'applicationForm'
+    );
 
   if (applicationForm) {
-    applicationForm.style.display = 'none';
+    applicationForm.style.display =
+      'none';
   }
 
-  document.getElementById(
-    'profileArea'
-  ).insertAdjacentHTML(
-    'afterend',
-    `
-      <div class="profile-warning">
+  const existingStatus =
+    document.querySelector(
+      '.duplicate-application-status'
+    );
 
-        <strong>
-          Application already submitted
-        </strong>
+  if (existingStatus) {
+    return true;
+  }
 
-        <p>
-          You have already applied for this job.
-        </p>
+  const statusBox =
+    document.createElement('div');
 
-        <p>
-          Application status:
-          <strong>
-            ${escapeHtml(data.status || 'submitted')}
-          </strong>
-        </p>
+  statusBox.className =
+    'profile-warning duplicate-application-status';
 
-        <div class="apply-actions">
+  statusBox.innerHTML = `
+    <strong>
+      Application already submitted
+    </strong>
 
-          <a
-            href="jobs.html"
-            class="btn blue"
-          >
-            Find More Jobs
-          </a>
+    <p>
+      You have already applied for this job.
+    </p>
 
-        </div>
+    <p>
+      Application status:
+      <strong>
+        ${escapeHtml(
+          data.status ||
+          'submitted'
+        )}
+      </strong>
+    </p>
 
-      </div>
-    `
-  );
+    <div class="apply-actions">
+
+      <a
+        href="jobs.html"
+        class="btn blue"
+      >
+        Find More Jobs
+      </a>
+
+    </div>
+  `;
+
+  const profileArea =
+    document.getElementById(
+      'profileArea'
+    );
+
+  if (profileArea) {
+    profileArea.insertAdjacentElement(
+      'afterend',
+      statusBox
+    );
+  }
 
   return true;
 }
 
 function showApplicationForm() {
+  /*
+   * Remove any old duplicate status
+   * messages before showing the form.
+   */
+  clearApplicationExtraMessages();
+
   const form =
-    document.getElementById('applicationForm');
+    document.getElementById(
+      'applicationForm'
+    );
 
   if (form) {
-    form.style.display = 'block';
+    form.style.display =
+      'block';
   }
 }
 
 async function loadApplicationState() {
+
+  /*
+   * Prevent the initial load and the
+   * SIGNED_IN event from running this
+   * function at the same time.
+   */
+  if (applicationStateLoading) {
+    return;
+  }
+
+  applicationStateLoading = true;
+
   try {
+
     currentJobSeeker = null;
 
-    const loggedIn = await checkLogin();
+    const loggedIn =
+      await checkLogin();
 
     if (!loggedIn) {
       return;
@@ -389,6 +550,7 @@ async function loadApplicationState() {
     showApplicationForm();
 
   } catch (error) {
+
     console.error(
       'Could not load application state:',
       error
@@ -398,6 +560,11 @@ async function loadApplicationState() {
       error.message ||
       'Could not load your application information.'
     );
+
+  } finally {
+
+    applicationStateLoading = false;
+
   }
 }
 
@@ -417,99 +584,132 @@ async function submitApplication(event) {
   }
 
   const button =
-    document.getElementById('submitApplication');
+    document.getElementById(
+      'submitApplication'
+    );
 
   const coverMessage =
-    document.getElementById('coverMessage')
-      .value
-      .trim();
+    document.getElementById(
+      'coverMessage'
+    )?.value.trim() || '';
 
   if (button) {
     button.disabled = true;
-    button.textContent = 'Submitting...';
+    button.textContent =
+      'Submitting...';
   }
 
   try {
+
     const { error } =
       await applicationSupabase
         .from('job_applications')
         .insert({
-          job_id: currentJob.id,
-          job_seeker_id: currentJobSeeker.id,
-          cover_message: coverMessage || null,
-          status: 'submitted'
+          job_id:
+            currentJob.id,
+
+          job_seeker_id:
+            currentJobSeeker.id,
+
+          cover_message:
+            coverMessage || null,
+
+          status:
+            'submitted'
         });
 
     if (error) {
+
       console.error(
         'APPLICATION INSERT ERROR:',
         error
       );
 
-      if (error.code === '23505') {
+      if (
+        error.code === '23505'
+      ) {
+
         showError(
           'You have already applied for this job.'
         );
+
       } else {
+
         showError(
           error.message ||
           'Unable to submit application.'
         );
+
       }
 
       return;
     }
 
     const applicationForm =
-      document.getElementById('applicationForm');
+      document.getElementById(
+        'applicationForm'
+      );
 
     if (applicationForm) {
-      applicationForm.style.display = 'none';
+      applicationForm.style.display =
+        'none';
     }
 
-    document.getElementById(
-      'profileArea'
-    ).innerHTML = `
-      <div class="status-message show success">
+    clearApplicationExtraMessages();
 
-        <strong>
-          Application submitted successfully.
-        </strong>
+    const profileArea =
+      document.getElementById(
+        'profileArea'
+      );
 
-        <p>
-          Your application has been sent for this position.
-        </p>
+    if (profileArea) {
 
-        <div class="apply-actions">
+      profileArea.innerHTML = `
+        <div class="status-message show success">
 
-          <a
-            href="jobs.html"
-            class="btn blue"
-          >
-            Find More Jobs
-          </a>
+          <strong>
+            Application submitted successfully.
+          </strong>
 
-          <a
-            href="job-seeker.html"
-            class="btn gray"
-          >
-            View My Profile
-          </a>
+          <p>
+            Your application has been sent for this position.
+          </p>
+
+          <div class="apply-actions">
+
+            <a
+              href="jobs.html"
+              class="btn blue"
+            >
+              Find More Jobs
+            </a>
+
+            <a
+              href="job-seeker.html"
+              class="btn gray"
+            >
+              View My Profile
+            </a>
+
+          </div>
 
         </div>
-
-      </div>
-    `;
+      `;
+    }
 
   } finally {
+
     if (button) {
       button.disabled = false;
-      button.textContent = 'Submit Application';
+      button.textContent =
+        'Submit Application';
     }
+
   }
 }
 
 function watchForLogin() {
+
   if (authListener) {
     return;
   }
@@ -528,32 +728,42 @@ function watchForLogin() {
           session &&
           session.user
         ) {
-          /*
-           * Do NOT reload the page.
-           *
-           * auth.js already closes the login modal.
-           * We simply update this page in place.
-           */
-          currentUser = session.user;
 
+          currentUser =
+            session.user;
+
+          /*
+           * Do not reload the page.
+           *
+           * The initial initialization may
+           * still be running, so loadApplicationState()
+           * will safely ignore this event if another
+           * state load is already in progress.
+           */
           setTimeout(
-            async function () {
-              await loadApplicationState();
+            function () {
+              loadApplicationState();
             },
-            100
+            150
           );
         }
 
-        if (event === 'SIGNED_OUT') {
+        if (
+          event === 'SIGNED_OUT'
+        ) {
+
           currentUser = null;
           currentJobSeeker = null;
+
           renderLoginRequired();
         }
+
       }
     );
 }
 
 async function initialize() {
+
   if (applicationInitialized) {
     return;
   }
@@ -561,17 +771,30 @@ async function initialize() {
   applicationInitialized = true;
 
   try {
+
     await initializeSupabase();
 
+    /*
+     * Register the auth listener once.
+     */
     watchForLogin();
 
+    /*
+     * Load the job only once.
+     */
     await loadJob();
 
     showContent();
 
+    /*
+     * Determine whether the user is
+     * logged in and load the correct
+     * application state.
+     */
     await loadApplicationState();
 
   } catch (error) {
+
     console.error(
       'Application page error:',
       error
@@ -589,7 +812,9 @@ document.addEventListener(
   function () {
 
     const form =
-      document.getElementById('applicationForm');
+      document.getElementById(
+        'applicationForm'
+      );
 
     if (form) {
       form.addEventListener(
@@ -602,5 +827,6 @@ document.addEventListener(
 
   }
 );
+
 
 
