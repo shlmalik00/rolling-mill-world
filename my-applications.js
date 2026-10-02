@@ -193,7 +193,10 @@ async function loadApplications(sb, session) {
     var jobs =
       jobsResult.data || [];
 
-    console.log("JOBS:", jobs);
+    console.log(
+  "FIRST JOB COMPANY ID:",
+  jobs[0] ? jobs[0].company_id : "NO JOB"
+);
     
 var companyIds = [];
 
