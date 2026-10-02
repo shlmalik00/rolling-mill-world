@@ -13,6 +13,7 @@
 <header>
   <div class="nav wrap">
 
+
 <a class="brand" href="index.html">
   <b>RMW</b> Rolling Mill <em>World</em>
 </a>
@@ -27,6 +28,7 @@
 </nav>
 
 <a class="btn blue" href="account.html">My Account</a>
+
 
   </div>
 </header>
@@ -43,6 +45,7 @@
   </p>
 
   <section class="card">
+
 
 <div class="form-grid">
 
@@ -65,6 +68,15 @@
   </div>
 
   <div>
+    <label for="location">Location</label>
+    <input
+      id="location"
+      type="text"
+      placeholder="City or location"
+    >
+  </div>
+
+  <div>
     <label for="employmentType">Employment type</label>
     <select id="employmentType">
       <option value="">All types</option>
@@ -76,11 +88,27 @@
     </select>
   </div>
 
+  <div>
+    <label for="experience">Experience</label>
+    <select id="experience">
+      <option value="">Any experience</option>
+      <option value="0">0–2 years</option>
+      <option value="3">3–5 years</option>
+      <option value="6">6–10 years</option>
+      <option value="11">11+ years</option>
+    </select>
+  </div>
+
 </div>
 
 <button class="btn dark" type="button" id="searchJobs">
   Search Jobs
 </button>
+
+<button class="btn" type="button" id="clearFilters">
+  Clear Filters
+</button>
+
 
   </section>
 
