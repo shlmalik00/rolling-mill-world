@@ -360,11 +360,24 @@ function renderApplication(
   card.className =
     "application-item";
 
-  var title =
-    document.createElement("h2");
 
-  title.textContent =
-    job.title || "Job";
+var title =
+  document.createElement("h2");
+
+title.textContent =
+  job.title || "Job";
+
+var company =
+  document.createElement("div");
+
+company.className =
+  "application-company";
+
+company.textContent =
+  companyMap[job.company_id] ||
+  "Company not specified";
+
+
 
   var location =
     document.createElement("div");
@@ -446,8 +459,12 @@ function renderApplication(
     viewButton
   );
 
-  card.appendChild(title);
-  card.appendChild(location);
+
+card.appendChild(title);
+card.appendChild(company);
+card.appendChild(location);
+
+
   card.appendChild(meta);
   card.appendChild(status);
   card.appendChild(actions);
