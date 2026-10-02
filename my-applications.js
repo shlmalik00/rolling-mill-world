@@ -1,363 +1,535 @@
-console.log("MY APPLICATIONS JS v22 LOADED");
+console.log("MY APPLICATIONS JS v23 LOADED");
 
 document.addEventListener("DOMContentLoaded", function () {
-console.log("MY APPLICATIONS DOM READY");
-initApplications();
+  console.log("MY APPLICATIONS DOM READY");
+  initApplications();
 });
 
 async function initApplications() {
-try {
-var sb = await getSupabaseClient();
+  try {
+    var sb = await getSupabaseClient();
 
+    var result = await sb.auth.getSession();
 
-var result = await sb.auth.getSession();
+    if (result.error) {
+      throw result.error;
+    }
 
-if (result.error) {
-  throw result.error;
-}
+    var session = result.data.session;
 
-var session = result.data.session;
+    console.log(
+      "INITIAL SESSION:",
+      session ? "SIGNED IN" : "SIGNED OUT"
+    );
 
-console.log(
-  "SESSION:",
-  session ? "SIGNED IN" : "SIGNED OUT"
-);
+    if (session) {
+      await loadApplications(sb, session);
+    } else {
+      hideLoading();
 
-if (!session) {
-  hideLoading();
+      showStatus(
+        "Please sign in to view your job applications."
+      );
+    }
 
-  showStatus(
-    "Please sign in to view your job applications."
-  );
+    sb.auth.onAuthStateChange(function (event, newSession) {
+      console.log("AUTH EVENT:", event);
 
-  return;
-}
+      if (event === "SIGNED_IN" && newSession) {
+        /*
+         * Do not query Supabase directly inside
+         * onAuthStateChange.
+         *
+         * Wait until the auth callback finishes.
+         */
+        setTimeout(function () {
+          loadApplications(sb, newSession);
+        }, 0);
+      }
 
-await loadApplications(sb, session);
+      if (event === "SIGNED_OUT") {
+        hideLoading();
 
-sb.auth.onAuthStateChange(function (event, newSession) {
-  console.log("AUTH EVENT:", event);
+        var content =
+          document.getElementById("applicationsContent");
 
-  if (event === "SIGNED_IN" && newSession) {
-    loadApplications(sb, newSession);
-  }
+        if (content) {
+          content.style.display = "none";
+        }
 
-  if (event === "SIGNED_OUT") {
+        showStatus(
+          "Please sign in to view your job applications."
+        );
+      }
+    });
+
+  } catch (error) {
+    console.error("MY APPLICATIONS ERROR:", error);
+
     hideLoading();
+
     showStatus(
-      "Please sign in to view your job applications."
+      error.message ||
+      "Could not load your applications."
     );
   }
-});
-
-
-} catch (error) {
-console.error("MY APPLICATIONS ERROR:", error);
-
-
-hideLoading();
-
-showStatus(
-  error.message || "Could not load your applications."
-);
-
-
-}
 }
 
 async function loadApplications(sb, session) {
-var loading = document.getElementById("loadingMessage");
+  try {
+    hideStatus();
 
-if (loading) {
-loading.textContent = "Loading your Job Seeker profile...";
-loading.style.display = "block";
-}
+    var loading =
+      document.getElementById("loadingMessage");
 
-var seekerResult = await sb
-.from("job_seekers")
-.select("id, full_name, professional_title")
-.eq("user_id", session.user.id)
-.maybeSingle();
+    if (loading) {
+      loading.textContent =
+        "Loading your Job Seeker profile...";
+      loading.style.display = "block";
+    }
 
-if (seekerResult.error) {
-throw seekerResult.error;
-}
+    var seekerResult = await sb
+      .from("job_seekers")
+      .select(
+        "id, full_name, professional_title"
+      )
+      .eq("user_id", session.user.id)
+      .maybeSingle();
 
-var seeker = seekerResult.data;
+    if (seekerResult.error) {
+      throw seekerResult.error;
+    }
 
-console.log("JOB SEEKER:", seeker);
+    var seeker = seekerResult.data;
 
-if (!seeker) {
-hideLoading();
+    console.log("JOB SEEKER:", seeker);
 
+    if (!seeker) {
+      hideLoading();
 
-showStatus(
-  "No Job Seeker profile was found for this account."
-);
+      showStatus(
+        "No Job Seeker profile was found for this account."
+      );
 
-return;
+      return;
+    }
 
+    if (loading) {
+      loading.textContent =
+        "Loading your applications...";
+    }
 
-}
+    var applicationsResult = await sb
+      .from("job_applications")
+      .select(
+        "id, job_id, status, created_at"
+      )
+      .eq("job_seeker_id", seeker.id)
+      .order("created_at", {
+        ascending: false
+      });
 
-if (loading) {
-loading.textContent = "Loading your applications...";
-}
+    if (applicationsResult.error) {
+      throw applicationsResult.error;
+    }
 
-var applicationsResult = await sb
-.from("job_applications")
-.select("id, job_id, status, created_at")
-.eq("job_seeker_id", seeker.id)
-.order("created_at", {
-ascending: false
-});
+    var applications =
+      applicationsResult.data || [];
 
-if (applicationsResult.error) {
-throw applicationsResult.error;
-}
+    console.log(
+      "APPLICATIONS:",
+      applications
+    );
 
-var applications = applicationsResult.data || [];
+    hideLoading();
 
-console.log("APPLICATIONS:", applications);
+    var content =
+      document.getElementById(
+        "applicationsContent"
+      );
 
-hideLoading();
+    var list =
+      document.getElementById(
+        "applicationList"
+      );
 
-var content = document.getElementById("applicationsContent");
-var list = document.getElementById("applicationList");
+    if (!content || !list) {
+      throw new Error(
+        "Application page elements were not found."
+      );
+    }
 
-if (!content || !list) {
-throw new Error("Application page elements were not found.");
-}
+    content.style.display = "block";
 
-content.style.display = "block";
+    if (applications.length === 0) {
+      renderEmptyState(list);
+      return;
+    }
 
-if (applications.length === 0) {
-renderEmptyState(list);
-return;
-}
+    var jobIds = [];
 
-var jobIds = [];
+    applications.forEach(function (application) {
+      if (application.job_id) {
+        jobIds.push(application.job_id);
+      }
+    });
 
-applications.forEach(function (application) {
-if (application.job_id) {
-jobIds.push(application.job_id);
-}
-});
+    if (jobIds.length === 0) {
+      renderEmptyState(list);
+      return;
+    }
 
-var jobsResult = await sb
-.from("jobs")
-.select(
-"id, title, location, country, employment_type, experience_required"
-)
-.in("id", jobIds);
+    var jobsResult = await sb
+      .from("jobs")
+      .select(
+        "id, title, location, country, employment_type, experience_required"
+      )
+      .in("id", jobIds);
 
-if (jobsResult.error) {
-throw jobsResult.error;
-}
+    if (jobsResult.error) {
+      throw jobsResult.error;
+    }
 
-var jobs = jobsResult.data || [];
+    var jobs =
+      jobsResult.data || [];
 
-console.log("JOBS:", jobs);
+    console.log("JOBS:", jobs);
 
-var jobMap = {};
+    var jobMap = {};
 
-jobs.forEach(function (job) {
-jobMap[job.id] = job;
-});
+    jobs.forEach(function (job) {
+      jobMap[job.id] = job;
+    });
 
-list.innerHTML = "";
+    list.innerHTML = "";
 
-applications.forEach(function (application) {
-var job = jobMap[application.job_id];
+    applications.forEach(function (application) {
+      var job =
+        jobMap[application.job_id];
 
+      if (job) {
+        renderApplication(
+          list,
+          application,
+          job
+        );
+      } else {
+        renderMissingJob(
+          list,
+          application
+        );
+      }
+    });
 
-if (job) {
-  renderApplication(list, application, job);
-} else {
-  renderMissingJob(list, application);
-}
+  } catch (error) {
+    console.error(
+      "LOAD APPLICATIONS ERROR:",
+      error
+    );
 
+    hideLoading();
 
-});
+    showStatus(
+      error.message ||
+      "Could not load your applications."
+    );
+  }
 }
 
 function renderEmptyState(list) {
-var card = document.createElement("div");
-card.className = "empty-state";
+  list.innerHTML = "";
 
-var title = document.createElement("h2");
-title.textContent = "No applications yet";
+  var card =
+    document.createElement("div");
 
-var text = document.createElement("p");
-text.textContent = "You have not applied for any jobs yet.";
+  card.className =
+    "empty-state";
 
-var link = document.createElement("a");
-link.className = "btn blue";
-link.href = "jobs.html";
-link.textContent = "Find Jobs";
+  var title =
+    document.createElement("h2");
 
-card.appendChild(title);
-card.appendChild(text);
-card.appendChild(link);
+  title.textContent =
+    "No applications yet";
 
-list.appendChild(card);
+  var text =
+    document.createElement("p");
+
+  text.textContent =
+    "You have not applied for any jobs yet.";
+
+  var link =
+    document.createElement("a");
+
+  link.className =
+    "btn blue";
+
+  link.href =
+    "jobs.html";
+
+  link.textContent =
+    "Find Jobs";
+
+  card.appendChild(title);
+  card.appendChild(text);
+  card.appendChild(link);
+
+  list.appendChild(card);
 }
 
-function renderMissingJob(list, application) {
-var card = document.createElement("div");
-card.className = "application-item";
+function renderMissingJob(
+  list,
+  application
+) {
+  var card =
+    document.createElement("div");
 
-var title = document.createElement("h2");
-title.textContent = "Job no longer available";
+  card.className =
+    "application-item";
 
-var status = document.createElement("p");
-status.textContent =
-"Status: " + (application.status || "submitted");
+  var title =
+    document.createElement("h2");
 
-card.appendChild(title);
-card.appendChild(status);
+  title.textContent =
+    "Job no longer available";
 
-list.appendChild(card);
+  var status =
+    document.createElement("p");
+
+  status.textContent =
+    "Status: " +
+    (application.status || "submitted");
+
+  card.appendChild(title);
+  card.appendChild(status);
+
+  list.appendChild(card);
 }
 
-function renderApplication(list, application, job) {
-var card = document.createElement("div");
-card.className = "application-item";
+function renderApplication(
+  list,
+  application,
+  job
+) {
+  var card =
+    document.createElement("div");
 
-var title = document.createElement("h2");
-title.textContent = job.title || "Job";
+  card.className =
+    "application-item";
 
-var location = document.createElement("div");
-location.className = "application-company";
+  var title =
+    document.createElement("h2");
 
-var locationText = job.location || "";
+  title.textContent =
+    job.title || "Job";
 
-if (job.country) {
-if (locationText) {
-locationText += ", ";
+  var location =
+    document.createElement("div");
+
+  location.className =
+    "application-company";
+
+  var locationText =
+    job.location || "";
+
+  if (job.country) {
+    if (locationText) {
+      locationText += ", ";
+    }
+
+    locationText +=
+      job.country;
+  }
+
+  location.textContent =
+    locationText;
+
+  var meta =
+    document.createElement("div");
+
+  meta.className =
+    "application-meta";
+
+  addMetaLine(
+    meta,
+    "Employment",
+    job.employment_type
+  );
+
+  addMetaLine(
+    meta,
+    "Experience",
+    job.experience_required
+  );
+
+  addMetaLine(
+    meta,
+    "Applied",
+    formatDate(
+      application.created_at
+    )
+  );
+
+  var status =
+    document.createElement("span");
+
+  status.className =
+    "application-status";
+
+  status.textContent =
+    application.status ||
+    "submitted";
+
+  var actions =
+    document.createElement("div");
+
+  actions.className =
+    "application-actions";
+
+  var viewButton =
+    document.createElement("a");
+
+  viewButton.className =
+    "btn blue";
+
+  viewButton.href =
+    "job-details.html?id=" +
+    encodeURIComponent(job.id);
+
+  viewButton.textContent =
+    "View Job";
+
+  actions.appendChild(
+    viewButton
+  );
+
+  card.appendChild(title);
+  card.appendChild(location);
+  card.appendChild(meta);
+  card.appendChild(status);
+  card.appendChild(actions);
+
+  list.appendChild(card);
 }
 
+function addMetaLine(
+  container,
+  label,
+  value
+) {
+  var line =
+    document.createElement("div");
 
-locationText += job.country;
+  var strong =
+    document.createElement("strong");
 
+  strong.textContent =
+    label + ": ";
 
-}
+  var text =
+    document.createTextNode(
+      value || "Not specified"
+    );
 
-location.textContent = locationText;
+  line.appendChild(strong);
+  line.appendChild(text);
 
-var meta = document.createElement("div");
-meta.className = "application-meta";
-
-addMetaLine(
-meta,
-"Employment",
-job.employment_type
-);
-
-addMetaLine(
-meta,
-"Experience",
-job.experience_required
-);
-
-addMetaLine(
-meta,
-"Applied",
-formatDate(application.created_at)
-);
-
-var status = document.createElement("span");
-status.className = "application-status";
-status.textContent =
-application.status || "submitted";
-
-var actions = document.createElement("div");
-actions.className = "application-actions";
-
-var viewButton = document.createElement("a");
-viewButton.className = "btn blue";
-viewButton.href =
-"job-details.html?id=" +
-encodeURIComponent(job.id);
-viewButton.textContent = "View Job";
-
-actions.appendChild(viewButton);
-
-card.appendChild(title);
-card.appendChild(location);
-card.appendChild(meta);
-card.appendChild(status);
-card.appendChild(actions);
-
-list.appendChild(card);
-}
-
-function addMetaLine(container, label, value) {
-var line = document.createElement("div");
-
-var strong = document.createElement("strong");
-strong.textContent = label + ": ";
-
-var text = document.createTextNode(
-value || "Not specified"
-);
-
-line.appendChild(strong);
-line.appendChild(text);
-
-container.appendChild(line);
+  container.appendChild(line);
 }
 
 function formatDate(value) {
-if (!value) {
-return "Not available";
-}
+  if (!value) {
+    return "Not available";
+  }
 
-var date = new Date(value);
+  var date =
+    new Date(value);
 
-if (isNaN(date.getTime())) {
-return "Not available";
-}
+  if (isNaN(date.getTime())) {
+    return "Not available";
+  }
 
-return date.toLocaleDateString();
+  return date.toLocaleDateString();
 }
 
 function showStatus(message) {
-var element = document.getElementById("statusMessage");
+  var element =
+    document.getElementById(
+      "statusMessage"
+    );
 
-if (!element) {
-return;
+  if (!element) {
+    return;
+  }
+
+  element.innerHTML = "";
+
+  var text =
+    document.createElement("span");
+
+  text.textContent =
+    message + " ";
+
+  var button =
+    document.createElement("button");
+
+  button.type =
+    "button";
+
+  button.className =
+    "btn blue";
+
+  button.textContent =
+    "Sign In";
+
+  button.addEventListener(
+    "click",
+    function () {
+      if (
+        typeof openAuth ===
+        "function"
+      ) {
+        openAuth("login");
+      } else {
+        console.error(
+          "openAuth() is not available."
+        );
+      }
+    }
+  );
+
+  element.appendChild(text);
+  element.appendChild(button);
+
+  element.style.display =
+    "block";
+
+  element.classList.add("show");
 }
 
-element.innerHTML = "";
+function hideStatus() {
+  var element =
+    document.getElementById(
+      "statusMessage"
+    );
 
-var text = document.createElement("span");
-text.textContent = message + " ";
+  if (!element) {
+    return;
+  }
 
-var button = document.createElement("button");
-button.type = "button";
-button.className = "btn blue";
-button.textContent = "Sign In";
-
-button.addEventListener("click", function () {
-if (typeof openAuth === "function") {
-openAuth("login");
-} else {
-console.error("openAuth() is not available.");
-}
-});
-
-element.appendChild(text);
-element.appendChild(button);
-
-element.style.display = "block";
+  element.innerHTML = "";
+  element.style.display = "none";
+  element.classList.remove("show");
 }
 
 function hideLoading() {
-var element = document.getElementById("loadingMessage");
+  var element =
+    document.getElementById(
+      "loadingMessage"
+    );
 
-if (element) {
-element.style.display = "none";
-}
+  if (element) {
+    element.style.display =
+      "none";
+  }
 }
 
