@@ -1,3 +1,5 @@
+console.log("========== RMW JOBS JS v3 LOADED ==========");
+
 let jobsClient = null;
 
 async function getJobsClient() {
