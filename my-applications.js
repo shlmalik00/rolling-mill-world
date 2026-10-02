@@ -181,9 +181,9 @@ async function loadApplications(sb, session) {
 
     var jobsResult = await sb
       .from("jobs")
-      .select(
-        "id, title, location, country, employment_type, experience_required"
-      )
+     .select(
+  "id, title, location, country, employment_type, experience_required, company_id"
+)
       .in("id", jobIds);
 
     if (jobsResult.error) {
@@ -194,6 +194,42 @@ async function loadApplications(sb, session) {
       jobsResult.data || [];
 
     console.log("JOBS:", jobs);
+    
+var companyIds = [];
+
+jobs.forEach(function (job) {
+  if (job.company_id) {
+    companyIds.push(job.company_id);
+  }
+});
+
+var companyMap = {};
+
+if (companyIds.length > 0) {
+  var companiesResult = await sb
+    .from("companies")
+    .select("id, company_name")
+    .in("id", companyIds);
+
+  if (companiesResult.error) {
+    throw companiesResult.error;
+  }
+
+  var companies =
+    companiesResult.data || [];
+
+  console.log(
+    "COMPANIES:",
+    companies
+  );
+
+  companies.forEach(function (company) {
+    companyMap[company.id] =
+      company.company_name;
+  });
+}
+
+
 
     var jobMap = {};
 
@@ -203,16 +239,19 @@ async function loadApplications(sb, session) {
 
     list.innerHTML = "";
 
-    applications.forEach(function (application) {
-      var job =
-        jobMap[application.job_id];
+   
+applications.forEach(function (application) {
+  var job =
+    jobMap[application.job_id];
 
-      if (job) {
-        renderApplication(
-          list,
-          application,
-          job
-        );
+  if (job) {
+    renderApplication(
+      list,
+      application,
+      job,
+      companyMap
+    );
+    
       } else {
         renderMissingJob(
           list,
@@ -308,8 +347,10 @@ function renderMissingJob(
 function renderApplication(
   list,
   application,
-  job
+  job,
+  companyMap
 ) {
+  
   var card =
     document.createElement("div");
 
