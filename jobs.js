@@ -1,7 +1,6 @@
-console.log("RMW JOBS v10 LOADED");
+console.log("RMW JOBS v11 LOADED");
 
 var jobsClient = null;
-var allJobs = [];
 
 function getJobsClient() {
 if (jobsClient) {
@@ -15,87 +14,58 @@ return client;
 }
 
 function loadJobs() {
-var results = document.getElementById("jobsResults");
-var count = document.getElementById("jobsCount");
+console.log("STARTING JOB LOAD");
 
-results.innerHTML = "<p>Loading jobs...</p>";
+getJobsClient().then(function(client) {
+console.log("SUPABASE CLIENT READY");
 
-getJobsClient()
-.then(function(sb) {
-return sb
-.from("jobs")
-.select("*")
-.eq("status", "published")
-.order("created_at", {
-ascending: false
-});
-})
-.then(function(response) {
+```
+return client
+  .from("jobs")
+  .select("*")
+  .eq("status", "published");
+```
+
+}).then(function(response) {
+
+```
+console.log("SUPABASE RESPONSE:", response);
+
 if (response.error) {
-throw response.error;
+  console.error("DATABASE ERROR:", response.error);
+  return;
 }
 
+var jobs = response.data || [];
+
+console.log("NUMBER OF JOBS:", jobs.length);
+
+var count = document.getElementById("jobsCount");
+var results = document.getElementById("jobsResults");
+
+count.textContent = jobs.length + " jobs found";
+
+if (jobs.length === 0) {
+  results.textContent = "No published jobs found.";
+  return;
+}
+
+results.textContent =
+  "First job: " +
+  jobs[0].title;
 ```
-  allJobs = response.data || [];
 
-  console.log("PUBLISHED JOBS:", allJobs);
+}).catch(function(error) {
 
-  if (count) {
-    count.textContent =
-      allJobs.length + " jobs found";
-  }
+```
+console.error("JOB LOAD FAILED:", error);
+```
 
-  if (allJobs.length === 0) {
-    results.innerHTML =
-      "<section class=\"card\">" +
-      "<h2>No jobs found</h2>" +
-      "<p>There are currently no published jobs.</p>" +
-      "</section>";
-
-    return;
-  }
-
-  var html = "";
-  var i;
-
-  for (i = 0; i < allJobs.length; i++) {
-    html +=
-      "<section class=\"card\">" +
-      "<h2>" +
-      (allJobs[i].title || "Untitled Job") +
-      "</h2>" +
-      "<p><strong>Location:</strong> " +
-      (allJobs[i].location || "") +
-      ", " +
-      (allJobs[i].country || "") +
-      "</p>" +
-      "<p><strong>Employment:</strong> " +
-      (allJobs[i].employment_type || "") +
-      "</p>" +
-      "<p><strong>Experience:</strong> " +
-      (allJobs[i].experience_required || "") +
-      "</p>" +
-      "</section>";
-  }
-
-  results.innerHTML = html;
-})
-.catch(function(error) {
-  console.error("LOAD JOBS ERROR:", error);
-
-  results.innerHTML =
-    "<section class=\"card\">" +
-    "<h2>Could not load jobs</h2>" +
-    "<p>" +
-    (error.message || "Unknown error") +
-    "</p>" +
-    "</section>";
 });
-```
-
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+
 console.log("RMW JOBS DOM READY");
 
 var searchButton =
@@ -113,4 +83,5 @@ console.log("CLEAR FILTERS CLICKED");
 };
 
 loadJobs();
+
 });
