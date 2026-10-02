@@ -1,9 +1,11 @@
-console.log("========== RMW JOBS JS v3 LOADED ==========");
+console.log("RMW JOBS JS v4 LOADED");
 
 let jobsClient = null;
 
 async function getJobsClient() {
-if (jobsClient) return jobsClient;
+if (jobsClient) {
+return jobsClient;
+}
 
 jobsClient = await getSupabaseClient();
 
@@ -20,13 +22,15 @@ return String(value ?? '')
 }
 
 function getExperienceNumber(value) {
-if (!value) return null;
+if (!value) {
+return null;
+}
 
-const text = String(value).toLowerCase();
+const match = String(value).match(/\d+/);
 
-const match = text.match(/\d+/);
-
-if (!match) return null;
+if (!match) {
+return null;
+}
 
 return parseInt(match[0], 10);
 }
@@ -35,7 +39,9 @@ async function loadJobs() {
 const results = document.getElementById('jobsResults');
 const count = document.getElementById('jobsCount');
 
-if (!results) return;
+if (!results) {
+return;
+}
 
 results.innerHTML = '<p>Loading jobs...</p>';
 
@@ -43,29 +49,17 @@ try {
 const sb = await getJobsClient();
 
 
-const search = document
-  .getElementById('search')
-  .value
-  .trim()
-  .toLowerCase();
+const searchInput = document.getElementById('search');
+const countryInput = document.getElementById('country');
+const locationInput = document.getElementById('location');
+const employmentInput = document.getElementById('employmentType');
+const experienceInput = document.getElementById('experience');
 
-const country = document
-  .getElementById('country')
-  .value
-  .trim()
-  .toLowerCase();
-
-const locationFilter = document
-  .getElementById('location')
-  .value
-  .trim()
-  .toLowerCase();
-
-const employmentType =
-  document.getElementById('employmentType').value;
-
-const experienceFilter =
-  document.getElementById('experience').value;
+const search = searchInput.value.trim().toLowerCase();
+const country = countryInput.value.trim().toLowerCase();
+const locationFilter = locationInput.value.trim().toLowerCase();
+const employmentType = employmentInput.value;
+const experienceFilter = experienceInput.value;
 
 const { data, error } = await sb
   .from('jobs')
@@ -86,15 +80,14 @@ const { data, error } = await sb
   .eq('status', 'published')
   .order('created_at', { ascending: false });
 
-if (error) throw error;
+if (error) {
+  throw error;
+}
 
 let jobs = data || [];
 
-/*
- * Keyword search
- */
 if (search) {
-  jobs = jobs.filter(job => {
+  jobs = jobs.filter(function (job) {
     const text = [
       job.title,
       job.description,
@@ -113,49 +106,38 @@ if (search) {
   });
 }
 
-/*
- * Country filter
- */
 if (country) {
-  jobs = jobs.filter(job =>
-    (job.country || '')
+  jobs = jobs.filter(function (job) {
+    return String(job.country || '')
       .toLowerCase()
-      .includes(country)
-  );
+      .includes(country);
+  });
 }
 
-/*
- * Location filter
- */
 if (locationFilter) {
-  jobs = jobs.filter(job =>
-    (job.location || '')
+  jobs = jobs.filter(function (job) {
+    return String(job.location || '')
       .toLowerCase()
-      .includes(locationFilter)
-  );
+      .includes(locationFilter);
+  });
 }
 
-/*
- * Employment type filter
- */
 if (employmentType) {
-  jobs = jobs.filter(job =>
-    job.employment_type === employmentType
-  );
+  jobs = jobs.filter(function (job) {
+    return job.employment_type === employmentType;
+  });
 }
 
-/*
- * Experience filter
- */
 if (experienceFilter) {
-  const minimumExperience =
-    parseInt(experienceFilter, 10);
+  const minimumExperience = parseInt(
+    experienceFilter,
+    10
+  );
 
-  jobs = jobs.filter(job => {
-    const years =
-      getExperienceNumber(
-        job.experience_required
-      );
+  jobs = jobs.filter(function (job) {
+    const years = getExperienceNumber(
+      job.experience_required
+    );
 
     if (years === null) {
       return false;
@@ -181,35 +163,25 @@ if (experienceFilter) {
   });
 }
 
-/*
- * Result count
- */
-count.textContent =
-  jobs.length === 1
-    ? '1 job found'
-    : `${jobs.length} jobs found`;
+if (count) {
+  count.textContent =
+    jobs.length === 1
+      ? '1 job found'
+      : jobs.length + ' jobs found';
+}
 
-/*
- * No results
- */
 if (!jobs.length) {
   results.innerHTML = `
     <section class="card">
       <h2>No jobs found</h2>
-      <p>
-        No published jobs match your search.
-      </p>
+      <p>No published jobs match your search.</p>
     </section>
   `;
 
   return;
 }
 
-/*
- * Render jobs
- */
-results.innerHTML = jobs.map(job => {
-
+results.innerHTML = jobs.map(function (job) {
   const location = [
     job.location,
     job.country
@@ -217,66 +189,67 @@ results.innerHTML = jobs.map(job => {
     .filter(Boolean)
     .join(', ');
 
-  return `
-    <article class="card">
+  let html = '<article class="card">';
 
-      <h2>${escapeHtml(job.title)}</h2>
+  html += '<h2>' +
+    escapeHtml(job.title) +
+    '</h2>';
 
-      ${
-        location
-          ? `<p><strong>Location:</strong> ${escapeHtml(location)}</p>`
-          : ''
-      }
+  if (location) {
+    html += '<p><strong>Location:</strong> ' +
+      escapeHtml(location) +
+      '</p>';
+  }
 
-      ${
-        job.employment_type
-          ? `<p><strong>Employment:</strong> ${escapeHtml(job.employment_type)}</p>`
-          : ''
-      }
+  if (job.employment_type) {
+    html += '<p><strong>Employment:</strong> ' +
+      escapeHtml(job.employment_type) +
+      '</p>';
+  }
 
-      ${
-        job.experience_required
-          ? `<p><strong>Experience:</strong> ${escapeHtml(job.experience_required)}</p>`
-          : ''
-      }
+  if (job.experience_required) {
+    html += '<p><strong>Experience:</strong> ' +
+      escapeHtml(job.experience_required) +
+      '</p>';
+  }
 
-      ${
-        job.salary_range
-          ? `<p><strong>Salary:</strong> ${escapeHtml(job.salary_range)}</p>`
-          : ''
-      }
+  if (job.salary_range) {
+    html += '<p><strong>Salary:</strong> ' +
+      escapeHtml(job.salary_range) +
+      '</p>';
+  }
 
-      <p>
-        ${escapeHtml(job.description)}
-      </p>
+  if (job.description) {
+    html += '<p>' +
+      escapeHtml(job.description) +
+      '</p>';
+  }
 
-      ${
-        job.skills_required
-          ? `<p><strong>Skills:</strong> ${escapeHtml(job.skills_required)}</p>`
-          : ''
-      }
+  if (job.skills_required) {
+    html += '<p><strong>Skills:</strong> ' +
+      escapeHtml(job.skills_required) +
+      '</p>';
+  }
 
-      ${
-        job.accommodation
-          ? `<p><strong>Accommodation:</strong> ${escapeHtml(job.accommodation)}</p>`
-          : ''
-      }
+  if (job.accommodation) {
+    html += '<p><strong>Accommodation:</strong> ' +
+      escapeHtml(job.accommodation) +
+      '</p>';
+  }
 
-      ${
-        job.application_deadline
-          ? `<p><strong>Application deadline:</strong> ${escapeHtml(job.application_deadline)}</p>`
-          : ''
-      }
+  if (job.application_deadline) {
+    html += '<p><strong>Application deadline:</strong> ' +
+      escapeHtml(job.application_deadline) +
+      '</p>';
+  }
 
-      <a
-        class="btn blue"
-        href="job-details.html?id=${encodeURIComponent(job.id)}"
-      >
-        View Job
-      </a>
+  html += '<a class="btn blue" href="job-details.html?id=' +
+    encodeURIComponent(job.id) +
+    '">View Job</a>';
 
-    </article>
-  `;
+  html += '</article>';
+
+  return html;
 }).join('');
 
 
@@ -291,9 +264,9 @@ if (count) {
 results.innerHTML = `
   <section class="card">
     <h2>Could not load jobs</h2>
-    <p>
-      ${escapeHtml(err.message || 'Please try again.')}
-    </p>
+    <p>${escapeHtml(
+      err.message || 'Please try again.'
+    )}</p>
   </section>
 `;
 
@@ -302,6 +275,8 @@ results.innerHTML = `
 }
 
 function clearFilters() {
+console.log('CLEAR FILTERS CLICKED');
+
 document.getElementById('search').value = '';
 document.getElementById('country').value = '';
 document.getElementById('location').value = '';
@@ -311,7 +286,8 @@ document.getElementById('experience').value = '';
 loadJobs();
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', function () {
+console.log('JOBS DOM READY');
 
 const searchButton =
 document.getElementById('searchJobs');
@@ -319,40 +295,42 @@ document.getElementById('searchJobs');
 const clearButton =
 document.getElementById('clearFilters');
 
+console.log('SEARCH BUTTON:', searchButton);
+console.log('CLEAR BUTTON:', clearButton);
+
 if (searchButton) {
 searchButton.addEventListener(
 'click',
-loadJobs
+function () {
+console.log('SEARCH JOBS CLICKED');
+loadJobs();
+}
 );
 }
 
 if (clearButton) {
 clearButton.addEventListener(
 'click',
-clearFilters
+function () {
+clearFilters();
+}
 );
 }
 
-/*
+const filterFields = [
+'search',
+'country',
+'location'
+];
 
-* Press Enter in a filter field
-* to search.
-  */
-  const filterFields = [
-  'search',
-  'country',
-  'location'
-  ];
-
-filterFields.forEach(id => {
-const field =
-document.getElementById(id);
+filterFields.forEach(function (id) {
+const field = document.getElementById(id);
 
 
 if (field) {
   field.addEventListener(
     'keydown',
-    event => {
+    function (event) {
       if (event.key === 'Enter') {
         event.preventDefault();
         loadJobs();
@@ -364,5 +342,5 @@ if (field) {
 
 });
 
-await loadJobs();
+loadJobs();
 });
