@@ -1,6 +1,7 @@
-console.log("RMW JOBS v11 LOADED");
+console.log("RMW JOBS v13 LOADED");
 
 var jobsClient = null;
+var allJobs = [];
 
 function getJobsClient() {
 if (jobsClient) {
@@ -13,75 +14,416 @@ return client;
 });
 }
 
-function loadJobs() {
-console.log("STARTING JOB LOAD");
+function setCount(number) {
+var count = document.getElementById("jobsCount");
 
-getJobsClient().then(function(client) {
-console.log("SUPABASE CLIENT READY");
-
-```
-return client
-  .from("jobs")
-  .select("*")
-  .eq("status", "published");
-```
-
-}).then(function(response) {
-
-```
-console.log("SUPABASE RESPONSE:", response);
-
-if (response.error) {
-  console.error("DATABASE ERROR:", response.error);
-  return;
+if (!count) {
+return;
 }
 
-var jobs = response.data || [];
+if (number === 1) {
+count.textContent = "1 job found";
+} else {
+count.textContent = number + " jobs found";
+}
+}
 
-console.log("NUMBER OF JOBS:", jobs.length);
+function addField(parent, label, value) {
+if (!value) {
+return;
+}
 
-var count = document.getElementById("jobsCount");
+var p = document.createElement("p");
+var strong = document.createElement("strong");
+
+strong.textContent = label + ": ";
+
+p.appendChild(strong);
+p.appendChild(document.createTextNode(String(value)));
+
+parent.appendChild(p);
+}
+
+function makeLocation(job) {
+var value = job.location || "";
+
+if (job.country) {
+if (value) {
+value += ", ";
+}
+
+
+value += job.country;
+
+
+}
+
+return value;
+}
+
+function renderJobs(jobs) {
 var results = document.getElementById("jobsResults");
 
-count.textContent = jobs.length + " jobs found";
+if (!results) {
+return;
+}
+
+setCount(jobs.length);
+
+results.innerHTML = "";
 
 if (jobs.length === 0) {
-  results.textContent = "No published jobs found.";
-  return;
+var empty = document.createElement("section");
+
+
+empty.className = "card";
+
+empty.innerHTML =
+  "<h2>No jobs found</h2>" +
+  "<p>No published jobs match your search.</p>";
+
+results.appendChild(empty);
+
+return;
+
+
 }
 
-results.textContent =
-  "First job: " +
-  jobs[0].title;
-```
+var i;
 
-}).catch(function(error) {
+for (i = 0; i < jobs.length; i++) {
+var job = jobs[i];
 
-```
-console.error("JOB LOAD FAILED:", error);
-```
 
+var card = document.createElement("section");
+
+card.className = "card";
+
+var title = document.createElement("h2");
+
+title.textContent = job.title || "Untitled Job";
+
+card.appendChild(title);
+
+addField(
+  card,
+  "Location",
+  makeLocation(job)
+);
+
+addField(
+  card,
+  "Employment",
+  job.employment_type
+);
+
+addField(
+  card,
+  "Experience",
+  job.experience_required
+);
+
+addField(
+  card,
+  "Salary",
+  job.salary_range
+);
+
+addField(
+  card,
+  "Skills",
+  job.skills_required
+);
+
+addField(
+  card,
+  "Accommodation",
+  job.accommodation
+);
+
+if (job.description) {
+  var description = document.createElement("p");
+
+  description.textContent = job.description;
+
+  card.appendChild(description);
+}
+
+addField(
+  card,
+  "Application deadline",
+  job.application_deadline
+);
+
+var link = document.createElement("a");
+
+link.className = "btn blue";
+
+link.href =
+  "job-details.html?id=" +
+  encodeURIComponent(job.id);
+
+link.textContent = "View Job";
+
+card.appendChild(link);
+
+results.appendChild(card);
+
+
+}
+}
+
+function loadJobs() {
+var results =
+document.getElementById("jobsResults");
+
+if (results) {
+results.textContent = "Loading jobs...";
+}
+
+getJobsClient()
+.then(function(client) {
+
+
+  return client
+    .from("jobs")
+    .select(
+      "id,title,description,location,country,employment_type,experience_required,skills_required,salary_range,accommodation,application_deadline,created_at"
+    )
+    .eq("status", "published")
+    .order("created_at", {
+      ascending: false
+    });
+
+})
+.then(function(response) {
+
+  if (response.error) {
+    throw response.error;
+  }
+
+  allJobs = response.data || [];
+
+  console.log(
+    "PUBLISHED JOBS:",
+    allJobs.length
+  );
+
+  renderJobs(allJobs);
+
+})
+.catch(function(error) {
+
+  console.error(
+    "JOB LOAD ERROR:",
+    error
+  );
+
+  var results =
+    document.getElementById("jobsResults");
+
+  if (results) {
+    results.textContent =
+      "Could not load jobs: " +
+      (error.message || "Unknown error");
+  }
 });
+
+
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+function matchesExperience(value, selected) {
+var match =
+String(value || "").match(/[0-9]+/);
+
+if (!match) {
+return false;
+}
+
+var years =
+parseInt(match[0], 10);
+
+if (selected === "0") {
+return years <= 2;
+}
+
+if (selected === "3") {
+return years >= 3 && years <= 5;
+}
+
+if (selected === "6") {
+return years >= 6 && years <= 10;
+}
+
+if (selected === "11") {
+return years >= 11;
+}
+
+return true;
+}
+
+function applyFilters() {
+console.log("SEARCH JOBS CLICKED");
+
+var search =
+document.getElementById("search")
+.value
+.trim()
+.toLowerCase();
+
+var country =
+document.getElementById("country")
+.value
+.trim()
+.toLowerCase();
+
+var location =
+document.getElementById("location")
+.value
+.trim()
+.toLowerCase();
+
+var employment =
+document.getElementById("employmentType")
+.value;
+
+var experience =
+document.getElementById("experience")
+.value;
+
+var filtered = [];
+
+var i;
+
+for (i = 0; i < allJobs.length; i++) {
+var job = allJobs[i];
+
+
+var text = [
+  job.title,
+  job.description,
+  job.skills_required,
+  job.experience_required,
+  job.location,
+  job.country
+]
+  .join(" ")
+  .toLowerCase();
+
+if (
+  search &&
+  text.indexOf(search) === -1
+) {
+  continue;
+}
+
+if (
+  country &&
+  String(job.country || "")
+    .toLowerCase()
+    .indexOf(country) === -1
+) {
+  continue;
+}
+
+if (
+  location &&
+  String(job.location || "")
+    .toLowerCase()
+    .indexOf(location) === -1
+) {
+  continue;
+}
+
+if (
+  employment &&
+  job.employment_type !== employment
+) {
+  continue;
+}
+
+if (
+  experience &&
+  !matchesExperience(
+    job.experience_required,
+    experience
+  )
+) {
+  continue;
+}
+
+filtered.push(job);
+
+
+}
+
+console.log(
+"FILTERED JOBS:",
+filtered.length
+);
+
+renderJobs(filtered);
+}
+
+function clearFilters() {
+console.log("CLEAR FILTERS CLICKED");
+
+document.getElementById("search").value = "";
+document.getElementById("country").value = "";
+document.getElementById("location").value = "";
+document.getElementById("employmentType").value = "";
+document.getElementById("experience").value = "";
+
+renderJobs(allJobs);
+}
+
+document.addEventListener(
+"DOMContentLoaded",
+function() {
+
 
 console.log("RMW JOBS DOM READY");
 
-var searchButton =
-document.getElementById("searchJobs");
+document.getElementById(
+  "searchJobs"
+).onclick = applyFilters;
 
-var clearButton =
-document.getElementById("clearFilters");
+document.getElementById(
+  "clearFilters"
+).onclick = clearFilters;
 
-searchButton.onclick = function() {
-console.log("SEARCH JOBS CLICKED");
+document.getElementById(
+  "search"
+).onkeydown = function(event) {
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    applyFilters();
+  }
 };
 
-clearButton.onclick = function() {
-console.log("CLEAR FILTERS CLICKED");
+document.getElementById(
+  "country"
+).onkeydown = function(event) {
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    applyFilters();
+  }
+};
+
+document.getElementById(
+  "location"
+).onkeydown = function(event) {
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    applyFilters();
+  }
 };
 
 loadJobs();
 
-});
+
+}
+);
