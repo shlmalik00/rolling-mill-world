@@ -13,61 +13,53 @@ async function loadSuppliers() {
   const results = document.getElementById('results');
   const count = document.getElementById('count');
 
-  if (results) {
-    results.innerHTML = '<p>Loading suppliers…</p>';
-  }
+  if (results) results.innerHTML = '<p>Loading suppliers…</p>';
 
   try {
-    if (typeof getSupabaseClient !== 'function') {
-      throw new Error('Supabase client is not available.');
-    }
-
     const sb = await getSupabaseClient();
 
-    const { data, error } = await sb.rpc('get_public_suppliers');
+    const response = await sb.rpc('get_public_suppliers');
 
-    if (error) {
-      throw error;
+    console.log('Supplier RPC response:', response);
+
+    if (response.error) {
+      throw new Error(
+        response.error.message ||
+        response.error.details ||
+        response.error.hint ||
+        'Supplier RPC failed'
+      );
     }
 
-    suppliers = (data || []).map(row => ({
-      id: row.id || '',
-      name: row.name || 'Unnamed supplier',
-      country: row.country || '',
-      type: row.type || '',
-      capabilities: row.capabilities || '',
-      website: row.website || '',
-      status: row.status || '',
-      role: row.role || ''
-    }));
+    suppliers = Array.isArray(response.data) ? response.data : [];
 
     render();
 
-   } catch (err) {
-    console.error('Supplier directory failed to load:', err);
+  } catch (err) {
+    console.error('Supplier directory failed:', err);
 
     suppliers = [];
 
-    const message = err && err.message
-      ? err.message
-      : String(err);
-
     if (count) {
-      count.textContent = 'Directory error';
+      count.textContent = '0 suppliers';
     }
 
     if (results) {
       results.innerHTML =
-        '<p><strong>Directory error:</strong> ' +
-        escapeHtml(message) +
-        '</p>';
+        '<p>Unable to load suppliers.</p>' +
+        '<p style="font-size:12px;color:#777;">Please refresh the page.</p>';
     }
   }
+}
 
 function render() {
-  const q = (document.getElementById('q').value || '').toLowerCase().trim();
-  const c = document.getElementById('cat').value;
-  const co = document.getElementById('country').value;
+  const qEl = document.getElementById('q');
+  const catEl = document.getElementById('cat');
+  const countryEl = document.getElementById('country');
+
+  const q = (qEl?.value || '').toLowerCase().trim();
+  const c = catEl?.value || '';
+  const co = countryEl?.value || '';
 
   const matches = suppliers.filter(x => {
     const haystack = [
@@ -84,83 +76,79 @@ function render() {
     );
   });
 
-  document.getElementById('count').textContent =
-    matches.length +
-    (matches.length === 1 ? ' supplier' : ' suppliers');
+  const count = document.getElementById('count');
+  const results = document.getElementById('results');
 
-  document.getElementById('results').innerHTML =
-    matches.map(x => {
+  if (count) {
+    count.textContent =
+      matches.length +
+      (matches.length === 1 ? ' supplier' : ' suppliers');
+  }
 
-      const website = String(x.website || '').trim();
+  if (!results) return;
 
-      const safeWebsite =
-        /^https?:\/\//i.test(website)
-          ? website
-          : '';
+  results.innerHTML = matches.map(x => {
+    const website = String(x.website || '').trim();
+    const safeWebsite =
+      /^https?:\/\//i.test(website) ? website : '';
 
-      const companyUrl =
-        'company.html?name=' +
-        encodeURIComponent(x.name);
+    return `
+      <article class="supplier">
+        <div>
+          <h3>
+            ${escapeHtml(x.name || 'Unnamed supplier')}
+            ${x.status === 'verified' ? ' ✓' : ''}
+          </h3>
 
-      return `
-        <article class="supplier">
-          <div>
-            <h3>
-              ${escapeHtml(x.name)}
-              ${x.status === 'verified' ? ' ✓' : ''}
-            </h3>
+          <p>
+            ${escapeHtml(
+              [x.country, x.capabilities]
+                .filter(Boolean)
+                .join(' · ') ||
+              'Supplier profile'
+            )}
+          </p>
 
-            <p>
-              ${escapeHtml(
-                [x.country, x.capabilities]
-                  .filter(Boolean)
-                  .join(' · ') ||
-                'Supplier profile'
-              )}
-            </p>
-
-            ${x.type
+          ${
+            x.type
               ? `<span class="tag">${escapeHtml(x.type)}</span>`
               : ''
-            }
+          }
 
-            <span class="tag">Public Listing</span>
+          <span class="tag">RFQ available</span>
 
-            <a href="${companyUrl}">
-              View Company
-            </a>
-
-            ${safeWebsite
+          ${
+            safeWebsite
               ? `<a href="${escapeHtml(safeWebsite)}"
                     target="_blank"
                     rel="noopener">
                     Website
                  </a>`
               : ''
-            }
-          </div>
+          }
+        </div>
 
-          <a class="btn dark" href="index.html#rfq">
-            Send RFQ
-          </a>
-        </article>
-      `;
-
-    }).join('') || '<p>No matching suppliers yet.</p>';
+        <a class="btn dark" href="index.html#rfq">
+          Send RFQ
+        </a>
+      </article>
+    `;
+  }).join('') || '<p>No matching suppliers yet.</p>';
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-
   const p = new URLSearchParams(location.search);
 
   if (p.get('category')) {
-    document.getElementById('cat').value =
-      p.get('category');
+    const cat = document.getElementById('cat');
+    if (cat) cat.value = p.get('category');
   }
 
-  if (localStorage.getItem('q')) {
-    document.getElementById('q').value =
-      localStorage.getItem('q');
+  const savedQuery = localStorage.getItem('q');
+
+  if (savedQuery) {
+    const q = document.getElementById('q');
+    if (q) q.value = savedQuery;
   }
 
   await loadSuppliers();
