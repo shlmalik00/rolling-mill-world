@@ -1,147 +1,162 @@
-const data = [
-  [
-    'G.P. Roll Makers India',
-    'India',
-    'Machinery',
-    'Section mills, structural mills, TMT/rebar mills, wire rod mills, strip mills and turnkey rolling-mill solutions',
-    'https://gprm.in/'
-  ],
-  [
-    'A.S. Precision Machines Pvt. Ltd.',
-    'India',
-    'Machinery',
-    'Rebar mills, section mills, strip mills, merchant bar mills, wire rod mills and rolling-mill equipment',
-    'https://www.aspm.in/'
-  ],
-  [
-    'J.S Rolling Mill Industries',
-    'India',
-    'Machinery',
-    'Turnkey rolling mills, mill stands, gearboxes, shears, conveyors and quenching systems',
-    'https://jsrollingmillindustries.com/'
-  ],
-  [
-    'Laxmi Industries',
-    'India',
-    'Machinery',
-    'Rolling mills, wire rod mills, continuous casting machines, mill stands, rolls and spare parts',
-    'https://www.laxmi.industries/'
-  ],
-  [
-    'Avtar Foundry & Workshop',
-    'India',
-    'Machinery',
-    'Rolling mill plants, housingless stands, gearboxes, cooling beds, shears, rolls and mill components',
-    'https://www.avtarsteelmillplant.com/'
-  ],
-  [
-    'Multi Roll Tech',
-    'India',
-    'Machinery',
-    'Section mills, TMT mills, hot-steel mills, wire-rod mills, housingless mills, rolls and gearboxes',
-    'https://multirolltech.com/'
-  ],
-  [
-    'R.S. Udyog',
-    'India',
-    'Spare Parts',
-    'Rolling-mill rolls, indefinite-chilled rolls, CI rolls and rolling-mill machinery',
-    'https://rsudyog.com/'
-  ],
-  [
-    'Vimco Rolls Industries',
-    'India',
-    'Spare Parts',
-    'Adamite rolls, alloy-steel-base rolls, SG iron rolls, chilled cast-iron rolls and forged rolls',
-    'https://vimcorolls.com/'
-  ],
-  [
-    'ADK Machines',
-    'Turkey',
-    'Machinery',
-    'Turnkey rolling mills, meltshop technology, machinery, spare parts and commissioning',
-    'https://www.adkmachines.com/'
-  ],
-  [
-    'Rana Steel',
-    'Turkey',
-    'Machinery',
-    'Rolling mills, rolling-mill equipment, meltshops and turnkey steel-plant solutions',
-    'https://www.ranademir.com/'
-  ]
-];
-
-function render() {
-  const q =
-    (document.getElementById('q').value || '').toLowerCase();
-
-  const c =
-    document.getElementById('cat').value;
-
-  const co =
-    document.getElementById('country').value;
-
-  const a = data.filter(
-    x =>
-      (!q || x.join(' ').toLowerCase().includes(q)) &&
-      (!c || x[2] === c) &&
-      (!co || x[1] === co)
-  );
-
-  document.getElementById('count').textContent =
-    a.length + ' suppliers';
-
-  document.getElementById('results').innerHTML =
-    a.map(
-      x => `
-        <article class="supplier">
-          <div>
-            <h3>${x[0]}</h3>
-            <p>${x[1]} · ${x[3]}</p>
-            <span class="tag">${x[2]}</span>
-            <span class="tag">Public Listing</span>
-          </div>
-
-         <div>
-
-
- <a
-  class="btn dark"
-  href="company.html?name=${encodeURIComponent(x[0])}"
->
-  View Company
-</a>
-
-<a
-  class="btn dark"
-  href="index.html#rfq"
->
-  Send RFQ
-</a>
-</div>
-          </div>
-        </article>
-      `
-    ).join('') ||
-    '<p>No matching suppliers yet.</p>';
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
-document.addEventListener(
-  'DOMContentLoaded',
-  () => {
-    const p =
-      new URLSearchParams(location.search);
+let suppliers = [];
 
-    if (p.get('category')) {
-      document.getElementById('cat').value =
-        p.get('category');
+async function loadSuppliers() {
+  const results = document.getElementById('results');
+  const count = document.getElementById('count');
+
+  if (results) {
+    results.innerHTML = '<p>Loading suppliers…</p>';
+  }
+
+  try {
+    if (typeof getSupabaseClient !== 'function') {
+      throw new Error('Supabase client is not available.');
     }
 
-    if (localStorage.getItem('q')) {
-      document.getElementById('q').value =
-        localStorage.getItem('q');
+    const sb = await getSupabaseClient();
+
+    const { data, error } = await sb.rpc('get_public_suppliers');
+
+    if (error) {
+      throw error;
     }
+
+    suppliers = (data || []).map(row => ({
+      id: row.id || '',
+      name: row.name || 'Unnamed supplier',
+      country: row.country || '',
+      type: row.type || '',
+      capabilities: row.capabilities || '',
+      website: row.website || '',
+      status: row.status || '',
+      role: row.role || ''
+    }));
 
     render();
+
+  } catch (err) {
+    console.error('Supplier directory failed to load:', err);
+
+    suppliers = [];
+
+    if (count) {
+      count.textContent = 'Supplier directory unavailable';
+    }
+
+    if (results) {
+      results.innerHTML =
+        '<p>We could not load the live supplier directory right now. Please try again shortly.</p>';
+    }
   }
-);
+}
+
+function render() {
+  const q = (document.getElementById('q').value || '').toLowerCase().trim();
+  const c = document.getElementById('cat').value;
+  const co = document.getElementById('country').value;
+
+  const matches = suppliers.filter(x => {
+    const haystack = [
+      x.name,
+      x.country,
+      x.type,
+      x.capabilities
+    ].join(' ').toLowerCase();
+
+    return (
+      (!q || haystack.includes(q)) &&
+      (!c || x.type === c) &&
+      (!co || x.country === co)
+    );
+  });
+
+  document.getElementById('count').textContent =
+    matches.length +
+    (matches.length === 1 ? ' supplier' : ' suppliers');
+
+  document.getElementById('results').innerHTML =
+    matches.map(x => {
+
+      const website = String(x.website || '').trim();
+
+      const safeWebsite =
+        /^https?:\/\//i.test(website)
+          ? website
+          : '';
+
+      const companyUrl =
+        'company.html?name=' +
+        encodeURIComponent(x.name);
+
+      return `
+        <article class="supplier">
+          <div>
+            <h3>
+              ${escapeHtml(x.name)}
+              ${x.status === 'verified' ? ' ✓' : ''}
+            </h3>
+
+            <p>
+              ${escapeHtml(
+                [x.country, x.capabilities]
+                  .filter(Boolean)
+                  .join(' · ') ||
+                'Supplier profile'
+              )}
+            </p>
+
+            ${x.type
+              ? `<span class="tag">${escapeHtml(x.type)}</span>`
+              : ''
+            }
+
+            <span class="tag">Public Listing</span>
+
+            <a href="${companyUrl}">
+              View Company
+            </a>
+
+            ${safeWebsite
+              ? `<a href="${escapeHtml(safeWebsite)}"
+                    target="_blank"
+                    rel="noopener">
+                    Website
+                 </a>`
+              : ''
+            }
+          </div>
+
+          <a class="btn dark" href="index.html#rfq">
+            Send RFQ
+          </a>
+        </article>
+      `;
+
+    }).join('') || '<p>No matching suppliers yet.</p>';
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+
+  const p = new URLSearchParams(location.search);
+
+  if (p.get('category')) {
+    document.getElementById('cat').value =
+      p.get('category');
+  }
+
+  if (localStorage.getItem('q')) {
+    document.getElementById('q').value =
+      localStorage.getItem('q');
+  }
+
+  await loadSuppliers();
+});
