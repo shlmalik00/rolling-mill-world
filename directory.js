@@ -43,21 +43,26 @@ async function loadSuppliers() {
 
     render();
 
-  } catch (err) {
+   } catch (err) {
     console.error('Supplier directory failed to load:', err);
 
     suppliers = [];
 
+    const message = err && err.message
+      ? err.message
+      : String(err);
+
     if (count) {
-      count.textContent = 'Supplier directory unavailable';
+      count.textContent = 'Directory error';
     }
 
     if (results) {
       results.innerHTML =
-        '<p>We could not load the live supplier directory right now. Please try again shortly.</p>';
+        '<p><strong>Directory error:</strong> ' +
+        escapeHtml(message) +
+        '</p>';
     }
   }
-}
 
 function render() {
   const q = (document.getElementById('q').value || '').toLowerCase().trim();
