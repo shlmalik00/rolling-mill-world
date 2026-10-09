@@ -1,0 +1,129 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Supplier RFQ Inbox | Rolling Mill World</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html"><b>RMW</b> Rolling Mill <em>World</em></a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="directory.html">Suppliers</a>
+      </nav>
+      <a class="btn dark" href="index.html">Home</a>
+    </div>
+  </header>
+
+  <main class="section wrap">
+    <label>SUPPLIER DASHBOARD</label>
+    <h1>RFQ Inbox</h1>
+    <p>View buyer requirements assigned to your company.</p>
+
+    <div id="inboxMessage" role="status">Loading your RFQs…</div>
+    <div id="rfqList"></div>
+  </main>
+
+  <footer>
+    <div class="wrap"><small>© 2026 Rolling Mill World</small></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script>
+    const escapeHtml = value => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    async function loadSupplierRfqs() {
+      const message = document.getElementById('inboxMessage');
+      const list = document.getElementById('rfqList');
+
+      try {
+        if (typeof getSupabaseClient !== 'function') {
+          throw new Error('Supabase configuration did not load.');
+        }
+
+        const sb = await getSupabaseClient();
+        const { data: sessionData, error: sessionError } =
+          await sb.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (!sessionData.session) {
+          message.textContent =
+            'Please sign in with the account that owns your supplier company.';
+          return;
+        }
+
+        const user = sessionData.session.user;
+
+        const { data: companies, error: companyError } = await sb
+          .from('companies')
+          .select('id, company_name')
+          .eq('owner_id', user.id)
+          .eq('company_type', 'supplier');
+
+        if (companyError) throw companyError;
+
+        if (!companies || companies.length === 0) {
+          message.textContent =
+            'No supplier company is linked to this account yet. Sign in with the account that registered your supplier profile.';
+          return;
+        }
+
+        const companyIds = companies.map(company => company.id);
+
+        const { data: rfqs, error: rfqError } = await sb
+          .from('rfqs')
+          .select('id, title, description, status, delivery_country, created_at, supplier_id, company_id')
+          .or(
+            'supplier_id.in.(' + companyIds.join(',') + '),' +
+            'company_id.in.(' + companyIds.join(',') + ')'
+          )
+          .order('created_at', { ascending: false });
+
+        if (rfqError) throw rfqError;
+
+        if (!rfqs || rfqs.length === 0) {
+          message.textContent =
+            'No RFQs have been assigned to your company yet.';
+          return;
+        }
+
+        message.textContent = rfqs.length +
+          (rfqs.length === 1 ? ' assigned RFQ' : ' assigned RFQs');
+
+        list.innerHTML = rfqs.map(rfq => `
+          <article class="supplier" style="margin-top:16px;padding:20px;">
+            <h3>${escapeHtml(rfq.title || 'Rolling mill requirement')}</h3>
+            <p>${escapeHtml(rfq.description || 'No additional details provided.')}</p>
+            <p><strong>Delivery country:</strong>
+              ${escapeHtml(rfq.delivery_country || 'Not specified')}</p>
+            <p><strong>Status:</strong> ${escapeHtml(rfq.status || 'open')}</p>
+            <p><strong>Received:</strong>
+              ${rfq.created_at
+                ? escapeHtml(new Date(rfq.created_at).toLocaleDateString())
+                : 'Not available'}</p>
+            <p><small>Reference: ${escapeHtml(rfq.id)}</small></p>
+          </article>
+        `).join('');
+
+      } catch (error) {
+        console.error('Supplier RFQ inbox error:', error);
+        message.textContent =
+          'Could not load RFQs: ' + (error.message || 'Unknown error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSupplierRfqs);
+  </script>
+</body>
+</html>
