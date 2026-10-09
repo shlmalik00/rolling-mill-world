@@ -64,6 +64,9 @@
         }
 
         const user = sessionData.session.user;
+        console.log('Dashboard user ID:', user.id);
+console.log('Expected supplier owner ID:',
+  '74353535-acf1-4324-bf5e-e19d15bc5b36');
 
         const { data: companies, error: companyError } = await sb
           .from('companies')
