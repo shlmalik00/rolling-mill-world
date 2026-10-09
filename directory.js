@@ -1,3 +1,4 @@
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -16,139 +17,125 @@ async function loadSuppliers() {
   if (results) results.innerHTML = '<p>Loading suppliers…</p>';
 
   try {
-    const sb = await getSupabaseClient();
-
-    const response = await sb.rpc('get_public_suppliers');
-
-    console.log('Supplier RPC response:', response);
-
-    if (response.error) {
-      throw new Error(
-        response.error.message ||
-        response.error.details ||
-        response.error.hint ||
-        'Supplier RPC failed'
-      );
+    if (typeof getSupabaseClient !== 'function') {
+      throw new Error('Supabase client is not available.');
     }
 
-    suppliers = Array.isArray(response.data) ? response.data : [];
+    const sb = await getSupabaseClient();
+    const { data, error } = await sb.rpc('get_public_suppliers');
+
+    if (error) throw error;
+
+    suppliers = (data || []).map(row => ({
+      id: row.id || '',
+      name: row.name || 'Unnamed supplier',
+      country: row.country || '',
+      type: row.type || '',
+      capabilities: row.capabilities || '',
+      website: row.website || '',
+      status: row.status || '',
+      role: row.role || ''
+    }));
 
     render();
-
   } catch (err) {
-    console.error('Supplier directory failed:', err);
-
+    console.error('Supplier directory failed to load:', err);
     suppliers = [];
 
-    if (count) {
-      count.textContent = '0 suppliers';
-    }
+    if (count) count.textContent = 'Supplier directory unavailable';
 
     if (results) {
       results.innerHTML =
-        '<p>Unable to load suppliers.</p>' +
-        '<p style="font-size:12px;color:#777;">Please refresh the page.</p>';
+        '<p>We could not load the live supplier directory right now. Please try again shortly.</p>';
     }
   }
 }
 
 function render() {
-  const qEl = document.getElementById('q');
-  const catEl = document.getElementById('cat');
-  const countryEl = document.getElementById('country');
+  const resultsEl = document.getElementById('results');
+  const countEl = document.getElementById('count');
 
-  const q = (qEl?.value || '').toLowerCase().trim();
-  const c = catEl?.value || '';
-  const co = countryEl?.value || '';
+  if (!resultsEl) return;
 
-  const matches = suppliers.filter(x => {
-    const haystack = [
-      x.name,
-      x.country,
-      x.type,
-      x.capabilities
+  const query = (document.getElementById('q')?.value || '')
+    .trim()
+    .toLowerCase();
+
+  const category = document.getElementById('cat')?.value || '';
+  const country = document.getElementById('country')?.value || '';
+
+  const matches = suppliers.filter(supplier => {
+    const searchable = [
+      supplier.name,
+      supplier.country,
+      supplier.type,
+      supplier.capabilities
     ].join(' ').toLowerCase();
 
-    return (
-      (!q || haystack.includes(q)) &&
-      (!c || x.type === c) &&
-      (!co || x.country === co)
-    );
+    const matchesQuery = !query || searchable.includes(query);
+    const matchesCategory = !category || supplier.type === category;
+    const matchesCountry = !country || supplier.country === country;
+
+    return matchesQuery && matchesCategory && matchesCountry;
   });
 
-  const count = document.getElementById('count');
-  const results = document.getElementById('results');
-
-  if (count) {
-    count.textContent =
-      matches.length +
-      (matches.length === 1 ? ' supplier' : ' suppliers');
+  if (countEl) {
+    countEl.textContent = `${matches.length} supplier${matches.length === 1 ? '' : 's'} found`;
   }
 
-  if (!results) return;
+  resultsEl.innerHTML = matches.map(supplier => {
+    const rfqUrl =
+      'index.html?rfq_supplier=' + encodeURIComponent(supplier.id) +
+      '&rfq_supplier_name=' + encodeURIComponent(supplier.name) +
+      '#rfq';
 
-  results.innerHTML = matches.map(x => {
-    const website = String(x.website || '').trim();
-    const safeWebsite =
-      /^https?:\/\//i.test(website) ? website : '';
+    const website = supplier.website
+      ? `<p><a href="${escapeHtml(supplier.website)}" target="_blank" rel="noopener noreferrer">Visit website</a></p>`
+      : '';
+
+    const countryText = supplier.country
+      ? `<p><strong>Country:</strong> ${escapeHtml(supplier.country)}</p>`
+      : '';
+
+    const typeText = supplier.type
+      ? `<p><strong>Type:</strong> ${escapeHtml(supplier.type)}</p>`
+      : '';
+
+    const capabilitiesText = supplier.capabilities
+      ? `<p>${escapeHtml(supplier.capabilities)}</p>`
+      : '';
 
     return `
       <article class="supplier">
-        <div>
-          <h3>
-            ${escapeHtml(x.name || 'Unnamed supplier')}
-            ${x.status === 'verified' ? ' ✓' : ''}
-          </h3>
-
-          <p>
-            ${escapeHtml(
-              [x.country, x.capabilities]
-                .filter(Boolean)
-                .join(' · ') ||
-              'Supplier profile'
-            )}
-          </p>
-
-          ${
-            x.type
-              ? `<span class="tag">${escapeHtml(x.type)}</span>`
-              : ''
-          }
-
-          <span class="tag">RFQ available</span>
-
-          ${
-            safeWebsite
-              ? `<a href="${escapeHtml(safeWebsite)}"
-                    target="_blank"
-                    rel="noopener">
-                    Website
-                 </a>`
-              : ''
-          }
-        </div>
-
-        <a class="btn dark" href="index.html#rfq">
-          Send RFQ
-        </a>
+        <h3>${escapeHtml(supplier.name)}</h3>
+        ${countryText}
+        ${typeText}
+        ${capabilitiesText}
+        ${website}
+        <a class="btn dark" href="${rfqUrl}">Send RFQ</a>
       </article>
     `;
   }).join('') || '<p>No matching suppliers yet.</p>';
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const p = new URLSearchParams(location.search);
+  const searchButton = document.querySelector('aside button');
 
-  if (p.get('category')) {
-    const cat = document.getElementById('cat');
-    if (cat) cat.value = p.get('category');
+  if (searchButton) {
+    searchButton.addEventListener('click', event => {
+      event.preventDefault();
+      render();
+    });
   }
 
-  const savedQuery = localStorage.getItem('q');
-
-  if (savedQuery) {
-    const q = document.getElementById('q');
-    if (q) q.value = savedQuery;
+  const queryInput = document.getElementById('q');
+  if (queryInput) {
+    queryInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        render();
+      }
+    });
   }
 
   await loadSuppliers();
