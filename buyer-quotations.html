@@ -184,15 +184,36 @@
                 <div class="quote-field">
                   <small>Warranty</small>
                   ${escapeHtml(q.warranty || 'Not provided')}
-                </div>
-                <div class="quote-field">
-                  <small>Supplier location</small>
-                  ${escapeHtml(
-                    [company.city, company.country].filter(Boolean).join(', ')
-                    || 'Not provided'
-                  )}
-                </div>
-              </div>
+              html
+<div class="quote-field">
+  <small>Supplier location</small>
+  ${escapeHtml(
+    [company.city, company.country].filter(Boolean).join(', ')
+    || 'Not provided'
+  )}
+</div>
+
+<div class="quote-field">
+  <small>Supplier email</small>
+  ${company.email
+    ? `<a href="mailto:${escapeHtml(company.email)}">${escapeHtml(company.email)}</a>`
+    : 'Not provided'}
+</div>
+
+<div class="quote-field">
+  <small>Supplier phone</small>
+  ${company.phone
+    ? `<a href="tel:${escapeHtml(company.phone)}">${escapeHtml(company.phone)}</a>`
+    : 'Not provided'}
+</div>
+
+<div class="quote-field">
+  <small>Supplier website</small>
+  ${company.website
+    ? `<a href="${escapeHtml(company.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(company.website)}</a>`
+    : 'Not provided'}
+</div>
+
 
               <p><strong>Supplier notes:</strong><br>
                 ${escapeHtml(q.notes || 'No additional notes')}</p>
