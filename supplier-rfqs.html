@@ -23,7 +23,6 @@
     <label>SUPPLIER DASHBOARD</label>
     <h1>RFQ Inbox</h1>
     <p>View buyer requirements assigned to your company.</p>
-
     <div id="inboxMessage" role="status">Loading your RFQs…</div>
     <div id="rfqList"></div>
   </main>
@@ -64,9 +63,6 @@
         }
 
         const user = sessionData.session.user;
-        console.log('Dashboard user ID:', user.id);
-console.log('Expected supplier owner ID:',
-  '74353535-acf1-4324-bf5e-e19d15bc5b36');
 
         const { data: companies, error: companyError } = await sb
           .from('companies')
@@ -104,59 +100,148 @@ console.log('Expected supplier owner ID:',
         message.textContent = rfqs.length +
           (rfqs.length === 1 ? ' assigned RFQ' : ' assigned RFQs');
 
-        list.innerHTML = rfqs.map(rfq => `
-          <article class="supplier" style="margin-top:16px;padding:20px;">
-            <h3>${escapeHtml(rfq.title || 'Rolling mill requirement')}</h3>
-            <p>${escapeHtml(rfq.description || 'No additional details provided.')}</p>
-            <p><strong>Delivery country:</strong>
-              ${escapeHtml(rfq.delivery_country || 'Not specified')}</p>
-            <p><strong>Status:</strong> ${escapeHtml(rfq.status || 'open')}</p>
-            <p><strong>Received:</strong>
-              ${rfq.created_at
-                ? escapeHtml(new Date(rfq.created_at).toLocaleDateString())
-                : 'Not available'}</p>
-          
-<p><strong>Reference:</strong> ${escapeHtml(rfq.id)}</p>
+        list.innerHTML = rfqs.map(rfq => {
+          // Use only a company owned by the signed-in supplier.
+          const assignedCompanyId = companyIds.find(id =>
+            id === rfq.supplier_id || id === rfq.company_id
+          );
 
-<form class="quotation-form" data-rfq-id="${escapeHtml(rfq.id)}"
-  style="margin-top:16px;padding-top:16px;border-top:1px solid #ddd;">
+          return `
+            <article class="supplier" style="margin-top:16px;padding:20px;">
+              <h3>${escapeHtml(rfq.title || 'Rolling mill requirement')}</h3>
+              <p>${escapeHtml(rfq.description || 'No additional details provided.')}</p>
+              <p><strong>Delivery country:</strong>
+                ${escapeHtml(rfq.delivery_country || 'Not specified')}</p>
+              <p><strong>Status:</strong>
+                ${escapeHtml(rfq.status || 'open')}</p>
+              <p><strong>Received:</strong>
+                ${rfq.created_at
+                  ? escapeHtml(new Date(rfq.created_at).toLocaleDateString())
+                  : 'Not available'}</p>
+              <p><strong>Reference:</strong> ${escapeHtml(rfq.id)}</p>
 
-  <h4>Submit Quotation</h4>
+              ${assignedCompanyId ? `
+                <form class="quotation-form"
+                  data-rfq-id="${escapeHtml(rfq.id)}"
+                  data-supplier-company-id="${escapeHtml(assignedCompanyId)}"
+                  style="margin-top:16px;padding-top:16px;border-top:1px solid #ddd;">
 
-  <label>Price *</label>
-  <input name="price" type="number" min="0" step="0.01"
-    required placeholder="Enter your total price">
+                  <h4>Submit Quotation</h4>
 
-  <label>Currency *</label>
-  <select name="currency" required>
-    <option value="">Select currency</option>
-    <option value="USD">USD</option>
-    <option value="EUR">EUR</option>
-    <option value="INR">INR</option>
-    <option value="AED">AED</option>
-  </select>
+                  <label>Price *</label>
+                  <input name="price" type="number" min="0"
+                    step="0.01" required placeholder="Enter your total price">
 
-  <label>Delivery time</label>
-  <input name="delivery_time" type="text"
-    placeholder="e.g. 8–10 weeks">
+                  <label>Currency *</label>
+                  <select name="currency" required>
+                    <option value="">Select currency</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="INR">INR</option>
+                    <option value="AED">AED</option>
+                  </select>
 
-  <label>Payment terms</label>
-  <input name="payment_terms" type="text"
-    placeholder="e.g. 30% advance, 70% before shipment">
+                  <label>Delivery time</label>
+                  <input name="delivery_time" type="text"
+                    placeholder="e.g. 8–10 weeks">
 
-  <label>Warranty</label>
-  <input name="warranty" type="text"
-    placeholder="e.g. 12 months">
+                  <label>Payment terms</label>
+                  <input name="payment_terms" type="text"
+                    placeholder="e.g. 30% advance, 70% before shipment">
 
-  <label>Notes</label>
-  <textarea name="notes" rows="3"
-    placeholder="Additional quotation details"></textarea>
+                  <label>Warranty</label>
+                  <input name="warranty" type="text"
+                    placeholder="e.g. 12 months">
 
-  <button type="submit">Submit Quotation</button>
-  <p class="quotation-message" aria-live="polite"></p>
-</form>
-          </article>
-        `).join('');
+                  <label>Notes</label>
+                  <textarea name="notes" rows="3"
+                    placeholder="Additional quotation details"></textarea>
+
+                  <button type="submit">Submit Quotation</button>
+                  <p class="quotation-message" role="status"
+                    aria-live="polite"></p>
+                </form>
+              ` : `
+                <p>Quotation submission is unavailable because this RFQ
+                  has no matching supplier assignment.</p>
+              `}
+            </article>
+          `;
+        }).join('');
+
+        // One delegated listener handles every quotation form.
+        list.addEventListener('submit', async event => {
+          const form = event.target;
+
+          if (!form.matches('.quotation-form')) return;
+          event.preventDefault();
+
+          const button = form.querySelector('button[type="submit"]');
+          const formMessage = form.querySelector('.quotation-message');
+          const formData = new FormData(form);
+
+          const rfqId = form.dataset.rfqId;
+          const supplierCompanyId = form.dataset.supplierCompanyId;
+          const rawPrice = String(formData.get('price') || '').trim();
+          const price = Number(rawPrice);
+          const currency = String(formData.get('currency') || '').trim();
+
+          if (!rawPrice || !Number.isFinite(price) ||
+              price < 0 || !currency) {
+            formMessage.textContent =
+              'Enter a valid price and select a currency.';
+            return;
+          }
+
+          button.disabled = true;
+          formMessage.textContent = 'Submitting quotation...';
+
+          try {
+            const { data: existing, error: checkError } = await sb
+              .from('quotations')
+              .select('id')
+              .eq('rfq_id', rfqId)
+              .eq('supplier_company_id', supplierCompanyId)
+              .limit(1);
+
+            if (checkError) throw checkError;
+
+            if (existing && existing.length > 0) {
+              formMessage.textContent =
+                'Your company has already submitted a quotation for this RFQ.';
+              return;
+            }
+
+            const { error: insertError } = await sb
+              .from('quotations')
+              .insert({
+                rfq_id: rfqId,
+                supplier_company_id: supplierCompanyId,
+                price,
+                currency,
+                delivery_time:
+                  String(formData.get('delivery_time') || '').trim() || null,
+                payment_terms:
+                  String(formData.get('payment_terms') || '').trim() || null,
+                warranty:
+                  String(formData.get('warranty') || '').trim() || null,
+                notes:
+                  String(formData.get('notes') || '').trim() || null,
+                status: 'submitted'
+              });
+
+            if (insertError) throw insertError;
+
+            formMessage.textContent = 'Quotation submitted successfully!';
+            form.reset();
+          } catch (error) {
+            console.error('Quotation submission error:', error);
+            formMessage.textContent =
+              'Submission failed: ' + (error.message || 'Please try again.');
+          } finally {
+            button.disabled = false;
+          }
+        });
 
       } catch (error) {
         console.error('Supplier RFQ inbox error:', error);
