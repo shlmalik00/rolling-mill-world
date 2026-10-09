@@ -176,6 +176,56 @@ async function loadPublicMarketplaceStats() {
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  
+const params = new URLSearchParams(window.location.search);
+const supplierId = params.get('rfq_supplier');
+const supplierName = params.get('rfq_supplier_name');
+
+if (supplierId || supplierName) {
+  const form = document.querySelector('#rfq form') ||
+               document.querySelector('form');
+
+  if (form) {
+    let supplierField = form.querySelector(
+      '[name="supplier_id"], [name="rfq_supplier"]'
+    );
+
+    if (!supplierField) {
+      supplierField = document.createElement('input');
+      supplierField.type = 'hidden';
+      supplierField.name = 'supplier_id';
+      form.appendChild(supplierField);
+    }
+
+    supplierField.value = supplierId || '';
+
+    const messageField = form.querySelector(
+      'textarea[name="message"], textarea[name="requirements"], textarea'
+    );
+
+    if (supplierName && messageField &&
+        !messageField.value.includes(supplierName)) {
+      messageField.value =
+        `Preferred supplier: ${supplierName}\n\n` +
+        messageField.value;
+    }
+
+    let notice = document.getElementById('selectedSupplierNotice');
+
+    if (!notice) {
+      notice = document.createElement('p');
+      notice.id = 'selectedSupplierNotice';
+      notice.style.cssText =
+        'padding:12px;background:#eef6ff;border-radius:8px;margin:12px 0;';
+
+      form.prepend(notice);
+    }
+
+    notice.textContent = supplierName
+      ? `RFQ for selected supplier: ${supplierName}`
+      : 'Supplier selected for this RFQ.';
+  }
+}
   const f = document.getElementById('rfqForm');
 
   if (f) {
