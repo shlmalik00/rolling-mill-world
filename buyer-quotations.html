@@ -82,8 +82,21 @@
       margin-top: 24px;
     }
 
-    #acceptedSupplierSection[hidden] {
+    #acceptedSupplierSection[hidden],
+    #acceptedSupplierList[hidden] {
       display: none;
+    }
+
+    #acceptedSupplierToggle {
+      cursor: pointer;
+      padding: 12px 16px;
+      border: 1px solid #27834a;
+      border-radius: 8px;
+      background: #e5f5e9;
+      color: #176b32;
+      font-weight: 700;
+      font-size: 16px;
+      text-align: left;
     }
   </style>
 </head>
@@ -113,9 +126,17 @@
       Loading quotations…
     </div>
 
+    <!-- Accepted supplier summary and working toggle button -->
     <section id="acceptedSupplierSection" hidden>
-      <h2>Accepted Suppliers</h2>
-      <p>Suppliers selected for your RFQs.</p>
+      <button
+        type="button"
+        id="acceptedSupplierToggle"
+        aria-expanded="true"
+        aria-controls="acceptedSupplierList"
+      >
+        Accepted supplier <span id="acceptedSupplierArrow">▼</span>
+      </button>
+
       <div id="acceptedSupplierList"></div>
     </section>
 
@@ -142,7 +163,6 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
-    // Only allow HTTP or HTTPS links for supplier websites.
     function safeWebsiteUrl(value) {
       const website = String(value || '').trim();
 
@@ -168,11 +188,30 @@
       }
     }
 
+    // Expand or collapse the accepted supplier summary.
+    document.getElementById('acceptedSupplierToggle')
+      .addEventListener('click', function () {
+        const supplierList =
+          document.getElementById('acceptedSupplierList');
+
+        const arrow =
+          document.getElementById('acceptedSupplierArrow');
+
+        const isOpen =
+          this.getAttribute('aria-expanded') === 'true';
+
+        supplierList.hidden = isOpen;
+        this.setAttribute('aria-expanded', String(!isOpen));
+        arrow.textContent = isOpen ? '▶' : '▼';
+      });
+
     async function loadBuyerQuotations() {
       const message = document.getElementById('pageMessage');
       const list = document.getElementById('quotationList');
+
       const acceptedSection =
         document.getElementById('acceptedSupplierSection');
+
       const acceptedList =
         document.getElementById('acceptedSupplierList');
 
@@ -219,6 +258,7 @@
         }
 
         const rfqIds = rfqs.map(rfq => rfq.id);
+
         const rfqById = new Map(
           rfqs.map(rfq => [rfq.id, rfq])
         );
@@ -252,7 +292,7 @@
             ? ' quotation received'
             : ' quotations received');
 
-        // Load supplier details.
+        // Load supplier contact details.
         const companyIds = [
           ...new Set(
             quotations
@@ -283,9 +323,8 @@
           companies.map(company => [company.id, company])
         );
 
-        // Build the accepted-supplier summary.
-        // Quotations are ordered newest-first, so if multiple
-        // quotations for one RFQ are accepted, the newest is shown.
+        // Build the accepted supplier summary.
+        // Show one accepted quotation per RFQ.
         const acceptedByRfq = new Map();
 
         for (const q of quotations) {
@@ -301,8 +340,17 @@
 
         acceptedSection.hidden = acceptedEntries.length === 0;
 
+        acceptedList.hidden = false;
+
+        document.getElementById('acceptedSupplierToggle')
+          .setAttribute('aria-expanded', 'true');
+
+        document.getElementById('acceptedSupplierArrow')
+          .textContent = '▼';
+
         acceptedList.innerHTML = acceptedEntries.map(q => {
           const rfq = rfqById.get(q.rfq_id);
+
           const company =
             companyById.get(q.supplier_company_id) || {};
 
@@ -310,6 +358,8 @@
             company.city,
             company.country
           ].filter(Boolean).join(', ');
+
+          const websiteUrl = safeWebsiteUrl(company.website);
 
           return `
             <article class="quote-card accepted-card">
@@ -361,8 +411,8 @@
 
                 <div class="quote-field">
                   <small>Supplier website</small>
-                  ${company.website && safeWebsiteUrl(company.website)
-                    ? `<a href="${escapeHtml(safeWebsiteUrl(company.website))}" target="_blank" rel="noopener noreferrer">${escapeHtml(company.website)}</a>`
+                  ${websiteUrl
+                    ? `<a href="${escapeHtml(websiteUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(company.website)}</a>`
                     : 'Not provided'}
                 </div>
               </div>
@@ -384,9 +434,10 @@
           `;
         }).join('');
 
-        // Render all quotation cards.
+        // Render all quotations.
         list.innerHTML = quotations.map(q => {
           const rfq = rfqById.get(q.rfq_id);
+
           const company =
             companyById.get(q.supplier_company_id) || {};
 
@@ -478,7 +529,8 @@
               <div class="quote-actions">
                 ${status !== 'shortlisted' &&
                   status !== 'accepted' &&
-                  status !== 'rejected' ? `
+                  status !== 'rejected' &&
+                  status !== 'withdrawn' ? `
                   <button
                     type="button"
                     data-id="${escapeHtml(q.id)}"
@@ -488,7 +540,8 @@
                 ` : ''}
 
                 ${status !== 'accepted' &&
-                  status !== 'rejected' ? `
+                  status !== 'rejected' &&
+                  status !== 'withdrawn' ? `
                   <button
                     type="button"
                     data-id="${escapeHtml(q.id)}"
@@ -535,12 +588,13 @@
           if (!quotationId || !newStatus) return;
 
           const card = button.closest('.quote-card');
+
           const cardMessage =
             card.querySelector('.quote-message');
 
           if (
             newStatus === 'accepted' &&
-            !confirm('Accept this quotation?')
+            !confirm('Accept this quotation? Other quotations for this RFQ will be rejected.')
           ) {
             return;
           }
@@ -604,4 +658,3 @@
   </script>
 </body>
 </html>
-
