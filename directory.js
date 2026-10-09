@@ -1,76 +1,5 @@
 
-async function getRfQClientAndUser() {
-  if (typeof getSupabaseClient !== 'function') {
-    throw new Error('Authentication system is not available.');
-  }
-
-  const sb = await getSupabaseClient();
-  const { data, error } = await sb.auth.getSession();
-
-  if (error) throw error;
-  if (!data.session || !data.session.user) {
-    throw new Error('Please sign in before submitting an RFQ.');
-  }
-
-  return { sb, user: data.session.user };
-}
-
-async function findCategoryId(sb, categoryLabel) {
-  const map = {
-    'Complete rolling mill': 'Complete Rolling Mill Plants',
-    'Machinery': 'Rolling Mill Machinery',
-    'Spare parts': 'Spare Parts',
-    'Service / maintenance': 'Maintenance Services',
-    'Used machinery': 'Used Machinery'
-  };
-
-  const name = map[categoryLabel];
-  if (!name) return null;
-
-  const { data, error } = await sb
-    .from('categories')
-    .select('id,name')
-    .eq('name', name)
-    .maybeSingle();
-
-  if (error) {
-    console.warn('RFQ category lookup failed:', error);
-    return null;
-  }
-
-  return data && data.id ? data.id : null;
-}
-
-async function findPublicSupplier(sb, supplierId) {
-  if (!supplierId) return null;
-
-  const { data, error } = await sb.rpc('get_public_suppliers');
-  if (error) throw error;
-
-  return (data || []).find(
-    row => String(row.id) === String(supplierId)
-  ) || null;
-}
-
-// Keep the selected supplier even after the URL is cleaned up.
-const initialRfqParams = new URLSearchParams(window.location.search);
-let selectedRfqSupplierId =
-  (initialRfqParams.get('rfq_supplier') || '').trim();
-
-const initialRfqSupplierName =
-  (initialRfqParams.get('rfq_supplier_name') || '').trim();
-
-function getSelectedSupplierId() {
-  if (selectedRfqSupplierId) return selectedRfqSupplierId;
-
-  selectedRfqSupplierId =
-    (new URLSearchParams(window.location.search)
-      .get('rfq_supplier') || '').trim();
-
-  return selectedRfqSupplierId;
-}
-
-function escapeHtmlForRfq(value) {
+function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -79,350 +8,148 @@ function escapeHtmlForRfq(value) {
     .replace(/'/g, '&#039;');
 }
 
-function renderSelectedSupplier(name, label = 'RFQ for:') {
-  const form = document.getElementById('rfqForm');
-  if (!form || !name) return;
+let suppliers = [];
 
-  let target = document.getElementById('rfqSupplierTarget');
+async function loadSuppliers() {
+  const results = document.getElementById('results');
+  const count = document.getElementById('count');
 
-  if (!target) {
-    target = document.createElement('div');
-    target.id = 'rfqSupplierTarget';
-    target.style.margin = '0 0 14px';
-    target.style.padding = '10px 12px';
-    target.style.borderRadius = '8px';
-    target.style.background = '#eef6ff';
-    target.style.border = '1px solid #cfe5ff';
-    target.style.fontSize = '14px';
-
-    const firstField = form.querySelector('input, select, textarea');
-
-    if (firstField) {
-      form.insertBefore(target, firstField);
-    } else {
-      form.appendChild(target);
-    }
+  if (!results) {
+    console.error('Directory error: #results element is missing.');
+    return;
   }
 
-  target.innerHTML =
-    '<strong>' + escapeHtmlForRfq(label) + '</strong> ' +
-    escapeHtmlForRfq(name);
-}
-
-async function showSelectedSupplier(sb, supplierId) {
-  if (!supplierId) return null;
-
-  const supplier = await findPublicSupplier(sb, supplierId);
-
-  if (!supplier) {
-    throw new Error(
-      'The selected supplier could not be found. Please return to the supplier directory and try again.'
-    );
-  }
-
-  // Use the supplier name verified by the database.
-  renderSelectedSupplier(supplier.name || 'Selected supplier');
-
-  return supplier;
-}
-
-async function submitRfq(e) {
-  e.preventDefault();
-
-  const form = e.currentTarget;
-  const msg = document.getElementById('msg');
-  const button = form.querySelector('button[type="submit"]');
-
-  if (msg) {
-    msg.className = '';
-    msg.textContent = 'Submitting RFQ…';
-  }
-
-  if (button) button.disabled = true;
+  results.innerHTML = '<p>Connecting to supplier directory…</p>';
+  if (count) count.textContent = 'Loading suppliers…';
 
   try {
-    const company = document.getElementById('rfqCompany').value.trim();
-    const email = document.getElementById('rfqEmail').value.trim();
-    const country = document.getElementById('rfqCountry').value.trim();
-    const categoryLabel = document.getElementById('rfqCategory').value;
-    const details = document.getElementById('rfqDetails').value.trim();
-    const consent = document.getElementById('rfqConsent').checked;
-    const supplierId = getSelectedSupplierId();
-
-    if (!company || !email || !country || !details) {
-      throw new Error('Please complete all required RFQ fields.');
+    if (typeof getSupabaseClient !== 'function') {
+      throw new Error('auth.js did not load. Check the script tags in directory.html.');
     }
 
-    if (!supplierId) {
-      throw new Error(
-        'Please select a supplier from the supplier directory before submitting this RFQ.'
-      );
-    }
-
-    if (!consent) {
-      throw new Error(
-        'Please confirm that Rolling Mill World may share this RFQ with the selected supplier.'
-      );
-    }
-
-    const { sb } = await getRfQClientAndUser();
-
-    // Always verify the supplier against the database.
-    const supplier = await showSelectedSupplier(sb, supplierId);
-
-    const categoryId = await findCategoryId(sb, categoryLabel);
-
-    if (!categoryId) {
-      throw new Error(
-        'The selected RFQ category could not be matched in the marketplace database.'
-      );
-    }
-
-    const payload = {
-      company_id: supplier.id,
-      category_id: categoryId,
-      title: 'Rolling Mill RFQ — ' + company,
-      description: details,
-      delivery_country: country,
-      status: 'open'
-    };
-
-    const { data, error } = await sb.rpc('submit_rfq', {
-      p_payload: payload
-    });
+    const sb = await getSupabaseClient();
+    const { data, error } = await sb.rpc('get_public_suppliers');
 
     if (error) throw error;
 
-    const result = data && typeof data === 'object' ? data : {};
-    const rfqId = result.id || '';
+    suppliers = (data || []).map(row => ({
+      id: row.id || '',
+      name: row.name || 'Unnamed supplier',
+      country: row.country || '',
+      type: row.type || '',
+      capabilities: row.capabilities || '',
+      website: row.website || '',
+      status: row.status || ''
+    }));
 
-    form.reset();
+    render();
 
-    // Keep the supplier selection visible after submission.
-    renderSelectedSupplier(
-      supplier.name || 'Selected supplier',
-      'RFQ sent to:'
-    );
-
-    if (msg) {
-      msg.className = 'ok';
-      msg.textContent =
-        'RFQ submitted successfully to ' +
-        (supplier.name || 'the selected supplier') +
-        (rfqId ? '. Reference: ' + rfqId : '.');
-    }
-
-    // Remove query parameters from the address bar without losing
-    // the selected supplier stored in selectedRfqSupplierId.
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState(
-        {},
-        document.title,
-        window.location.pathname + window.location.hash
-      );
+    if (suppliers.length === 0) {
+      results.innerHTML =
+        '<p>No suppliers were returned by the database. Please check supplier records and public access.</p>';
     }
   } catch (err) {
-    console.error('RFQ submission failed:', err);
+    console.error('Supplier directory error:', err);
+    suppliers = [];
 
-    if (msg) {
-      msg.className = '';
-      msg.textContent = err.message || 'Could not submit RFQ.';
-    }
-  } finally {
-    if (button) button.disabled = false;
-  }
-}
+    if (count) count.textContent = 'Could not load suppliers';
 
-async function initialiseSupplierSpecificRfq() {
-  const supplierId = getSelectedSupplierId();
-  const form = document.getElementById('rfqForm');
+    results.innerHTML =
+      '<p><strong>Unable to load suppliers.</strong></p>' +
+      '<p id="directoryError"></p>';
 
-  if (!form || !supplierId) return;
-
-  // Display the name immediately while the database lookup runs.
-  if (initialRfqSupplierName) {
-    renderSelectedSupplier(initialRfqSupplierName);
-  }
-
-  if (typeof getSupabaseClient !== 'function') return;
-
-  try {
-    const sb = await getSupabaseClient();
-    await showSelectedSupplier(sb, supplierId);
-  } catch (err) {
-    console.error('Selected supplier could not be loaded:', err);
-
-    const msg = document.getElementById('msg');
-
-    if (msg) {
-      msg.className = '';
-      msg.textContent =
-        err.message || 'Could not load the selected supplier.';
+    const errorBox = document.getElementById('directoryError');
+    if (errorBox) {
+      errorBox.textContent = err.message || 'Unknown error. Open the browser console for details.';
     }
   }
 }
 
-async function submitSupplier(e) {
-  e.preventDefault();
+function render() {
+  const results = document.getElementById('results');
+  const count = document.getElementById('count');
 
-  const form = e.currentTarget;
-  const msg = document.getElementById('supplierMsg');
-  const button = form.querySelector('button[type="submit"]');
+  if (!results) return;
 
-  if (msg) {
-    msg.className = '';
-    msg.textContent = 'Creating supplier profile…';
+  const q = (document.getElementById('q')?.value || '')
+    .trim()
+    .toLowerCase();
+
+  const category = document.getElementById('cat')?.value || '';
+  const country = document.getElementById('country')?.value || '';
+
+  const matches = suppliers.filter(supplier => {
+    const searchable = [
+      supplier.name,
+      supplier.country,
+      supplier.type,
+      supplier.capabilities
+    ].join(' ').toLowerCase();
+
+    return (!q || searchable.includes(q)) &&
+      (!category || supplier.type === category) &&
+      (!country || supplier.country === country);
+  });
+
+  if (count) {
+    count.textContent =
+      `${matches.length} supplier${matches.length === 1 ? '' : 's'} found`;
   }
 
-  if (button) button.disabled = true;
+  results.innerHTML = matches.map(supplier => {
+    const website = String(supplier.website || '').trim();
+    const safeWebsite = /^https?:\/\//i.test(website) ? website : '';
 
-  try {
-    const sb = await getSupabaseClient();
+    const rfqUrl =
+      'index.html?rfq_supplier=' + encodeURIComponent(supplier.id) +
+      '&rfq_supplier_name=' + encodeURIComponent(supplier.name) +
+      '#rfq';
 
-    const { data: sessionData, error: sessionError } =
-      await sb.auth.getSession();
-
-    if (sessionError) throw sessionError;
-
-    if (!sessionData.session || !sessionData.session.user) {
-      throw new Error(
-        'Please sign in before creating a supplier profile.'
-      );
-    }
-
-    const formFields = form.querySelectorAll('input, select, textarea');
-
-    const company = formFields[0].value.trim();
-    const email = formFields[1].value.trim();
-    const website = formFields[2].value.trim();
-    const country = formFields[3].value.trim();
-    const type = formFields[4].value;
-    const capabilities = formFields[5].value.trim();
-
-    if (!company || !email) {
-      throw new Error(
-        'Company name and business email are required.'
-      );
-    }
-
-    const { data, error } = await sb.rpc('register_supplier', {
-      p_company: company,
-      p_email: email,
-      p_website: website || null,
-      p_country: country || null,
-      p_type: type || null,
-      p_capabilities: capabilities || null
-    });
-
-    if (error) throw error;
-
-    const supplierId = data && data.id ? data.id : '';
-
-    form.reset();
-
-    if (msg) {
-      msg.className = 'ok';
-      msg.textContent =
-        'Supplier profile created successfully. Reference: ' +
-        supplierId;
-    }
-  } catch (err) {
-    console.error('Supplier registration failed:', err);
-
-    if (msg) {
-      msg.className = '';
-      msg.textContent =
-        err.message || 'Could not create supplier profile.';
-    }
-  } finally {
-    if (button) button.disabled = false;
-  }
+    return `
+      <article class="supplier">
+        <h3>${escapeHtml(supplier.name)}</h3>
+        ${supplier.country
+          ? `<p><strong>Country:</strong> ${escapeHtml(supplier.country)}</p>`
+          : ''}
+        ${supplier.type
+          ? `<p><strong>Type:</strong> ${escapeHtml(supplier.type)}</p>`
+          : ''}
+        ${supplier.capabilities
+          ? `<p>${escapeHtml(supplier.capabilities)}</p>`
+          : ''}
+        ${safeWebsite
+          ? `<p><a href="${escapeHtml(safeWebsite)}" target="_blank" rel="noopener noreferrer">Visit website</a></p>`
+          : ''}
+        <a class="btn dark" href="${rfqUrl}">Send RFQ</a>
+      </article>
+    `;
+  }).join('') || '<p>No matching suppliers. Clear the search and filters to see all suppliers.</p>';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const f = document.getElementById('rfqForm');
-  if (f) f.addEventListener('submit', submitRfq);
+  const searchButton = document.querySelector('aside button');
 
-  const s = document.getElementById('supplierForm');
-  if (s) s.addEventListener('submit', submitSupplier);
+  if (searchButton) {
+    searchButton.addEventListener('click', event => {
+      event.preventDefault();
+      render();
+    });
+  }
 
-  initialiseSupplierSpecificRfq();
+  const queryInput = document.getElementById('q');
+
+  if (queryInput) {
+    queryInput.addEventListener('input', render);
+    queryInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        render();
+      }
+    });
+  }
+
+  document.getElementById('cat')?.addEventListener('change', render);
+  document.getElementById('country')?.addEventListener('change', render);
+
+  loadSuppliers();
 });
-
-function setPublicStat(label, value) {
-  const target = String(label || '').trim().toLowerCase();
-
-  if (!target) return;
-
-  const idMap = {
-    suppliers: ['supplierCount', 'suppliersCount'],
-    'open rfqs': ['rfqCount', 'rfqsCount'],
-    rfqs: ['rfqCount', 'rfqsCount'],
-    jobs: ['jobCount', 'jobsCount']
-  };
-
-  for (const id of (idMap[target] || [])) {
-    const el = document.getElementById(id);
-
-    if (el) {
-      el.textContent = String(value);
-      return;
-    }
-  }
-
-  document.querySelectorAll('.stats > div').forEach(card => {
-    const spans = Array.from(card.querySelectorAll('span'));
-    const labels = spans.map(span => span.textContent.trim().toLowerCase());
-    const cardText = card.textContent.trim().toLowerCase();
-
-    const matches =
-      (target === 'suppliers' &&
-        (labels.includes('suppliers') || cardText.includes('suppliers'))) ||
-      (target === 'open rfqs' &&
-        (labels.includes('open rfqs') ||
-          labels.includes('rfqs') ||
-          cardText.includes('open rfqs') ||
-          /\brfqs?\b/.test(cardText))) ||
-      (target === 'rfqs' &&
-        (labels.includes('rfqs') || cardText.includes('rfqs'))) ||
-      (target === 'jobs' &&
-        (labels.includes('jobs') || cardText.includes('jobs')));
-
-    if (matches) {
-      const number = card.querySelector('b');
-      if (number) number.textContent = String(value);
-    }
-  });
-}
-
-async function loadPublicMarketplaceStats() {
-  const statsRoot = document.querySelector('.stats');
-
-  if (!statsRoot || typeof getSupabaseClient !== 'function') return;
-
-  try {
-    const sb = await getSupabaseClient();
-
-    const { data, error } = await sb.rpc('get_public_marketplace_stats');
-
-    if (error) throw error;
-
-    const stats = data && typeof data === 'object' ? data : {};
-
-    if (stats.supplier_count !== undefined) {
-      setPublicStat('suppliers', stats.supplier_count);
-    }
-
-    if (stats.open_rfq_count !== undefined) {
-      setPublicStat('open rfqs', stats.open_rfq_count);
-    }
-
-    if (stats.job_count !== undefined) {
-      setPublicStat('jobs', stats.job_count);
-    }
-  } catch (err) {
-    console.warn('Public marketplace stats could not be loaded:', err);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', loadPublicMarketplaceStats);
