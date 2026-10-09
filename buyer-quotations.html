@@ -1,0 +1,277 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Buyer Quotations | Rolling Mill World</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .quote-card {
+      margin-top: 18px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: var(--card, #fff);
+    }
+    .quote-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .quote-field {
+      padding: 12px;
+      background: #f5f6f7;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+    .quote-field small {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+    }
+    .quote-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .quote-actions button {
+      cursor: pointer;
+      padding: 9px 14px;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+    }
+    .quote-message {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html"><b>RMW</b> Rolling Mill <em>World</em></a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="directory.html">Suppliers</a>
+      </nav>
+      <a class="btn dark" href="index.html">Home</a>
+    </div>
+  </header>
+
+  <main class="section wrap">
+    <label>BUYER DASHBOARD</label>
+    <h1>Supplier Quotations</h1>
+    <p>Review offers received for your RFQs.</p>
+
+    <div id="pageMessage" role="status">Loading quotations…</div>
+    <div id="quotationList"></div>
+  </main>
+
+  <footer>
+    <div class="wrap"><small>© 2026 Rolling Mill World</small></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script>
+    const escapeHtml = value => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    async function loadBuyerQuotations() {
+      const message = document.getElementById('pageMessage');
+      const list = document.getElementById('quotationList');
+
+      try {
+        if (typeof getSupabaseClient !== 'function') {
+          throw new Error('Supabase configuration did not load.');
+        }
+
+        const sb = await getSupabaseClient();
+        const { data: sessionData, error: sessionError } =
+          await sb.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (!sessionData.session) {
+          message.textContent = 'Please sign in with your buyer account.';
+          return;
+        }
+
+        const { data: rfqs, error: rfqError } = await sb
+          .from('rfqs')
+          .select('id, title, status, created_at')
+          .eq('buyer_id', sessionData.session.user.id)
+          .order('created_at', { ascending: false });
+
+        if (rfqError) throw rfqError;
+
+        if (!rfqs || rfqs.length === 0) {
+          message.textContent = 'You have not created any RFQs yet.';
+          return;
+        }
+
+        const rfqIds = rfqs.map(rfq => rfq.id);
+        const rfqById = new Map(rfqs.map(rfq => [rfq.id, rfq]));
+
+        const { data: quotations, error: quotationError } = await sb
+          .from('quotations')
+          .select('id, rfq_id, supplier_company_id, price, currency, delivery_time, payment_terms, warranty, notes, status, created_at')
+          .in('rfq_id', rfqIds)
+          .order('created_at', { ascending: false });
+
+        if (quotationError) throw quotationError;
+
+        if (!quotations || quotations.length === 0) {
+          message.textContent =
+            'Your RFQs are listed, but no supplier quotations have arrived yet.';
+          return;
+        }
+
+        message.textContent = quotations.length +
+          (quotations.length === 1
+            ? ' quotation received'
+            : ' quotations received');
+
+        const companyIds = [...new Set(
+          quotations.map(q => q.supplier_company_id)
+        )];
+
+        const { data: companies, error: companiesError } = await sb
+          .from('companies')
+          .select('id, company_name, country, city, email, phone')
+          .in('id', companyIds);
+
+        if (companiesError) throw companiesError;
+
+        const companyById = new Map(
+          (companies || []).map(company => [company.id, company])
+        );
+
+        list.innerHTML = quotations.map(q => {
+          const rfq = rfqById.get(q.rfq_id);
+          const company = companyById.get(q.supplier_company_id) || {};
+          const status = q.status || 'submitted';
+
+          return `
+            <article class="quote-card">
+              <h3>${escapeHtml(rfq?.title || 'RFQ')}</h3>
+              <p><strong>Supplier:</strong>
+                ${escapeHtml(company.company_name || 'Supplier company')}</p>
+              <p><strong>Quotation status:</strong>
+                ${escapeHtml(status)}</p>
+
+              <div class="quote-grid">
+                <div class="quote-field">
+                  <small>Price</small>
+                  ${q.price == null
+                    ? 'Not provided'
+                    : escapeHtml(q.price) + ' ' + escapeHtml(q.currency || '')}
+                </div>
+                <div class="quote-field">
+                  <small>Delivery time</small>
+                  ${escapeHtml(q.delivery_time || 'Not provided')}
+                </div>
+                <div class="quote-field">
+                  <small>Payment terms</small>
+                  ${escapeHtml(q.payment_terms || 'Not provided')}
+                </div>
+                <div class="quote-field">
+                  <small>Warranty</small>
+                  ${escapeHtml(q.warranty || 'Not provided')}
+                </div>
+                <div class="quote-field">
+                  <small>Supplier location</small>
+                  ${escapeHtml(
+                    [company.city, company.country].filter(Boolean).join(', ')
+                    || 'Not provided'
+                  )}
+                </div>
+              </div>
+
+              <p><strong>Supplier notes:</strong><br>
+                ${escapeHtml(q.notes || 'No additional notes')}</p>
+
+              <div class="quote-actions">
+                ${status !== 'shortlisted' && status !== 'accepted' &&
+                  status !== 'rejected' ? `
+                  <button type="button" data-id="${escapeHtml(q.id)}"
+                    data-status="shortlisted">Shortlist</button>
+                ` : ''}
+
+                ${status !== 'accepted' && status !== 'rejected' ? `
+                  <button type="button" data-id="${escapeHtml(q.id)}"
+                    data-status="accepted">Accept</button>
+                  <button type="button" data-id="${escapeHtml(q.id)}"
+                    data-status="rejected">Reject</button>
+                ` : ''}
+
+                <button type="button" data-refresh="true">Refresh</button>
+              </div>
+              <p class="quote-message" aria-live="polite"></p>
+              <small>Quotation reference: ${escapeHtml(q.id)}</small>
+            </article>
+          `;
+        }).join('');
+
+        list.onclick = async event => {
+          const button = event.target.closest('button');
+          if (!button) return;
+
+          if (button.dataset.refresh) {
+            await loadBuyerQuotations();
+            return;
+          }
+
+          const quotationId = button.dataset.id;
+          const newStatus = button.dataset.status;
+          if (!quotationId || !newStatus) return;
+
+          const card = button.closest('.quote-card');
+          const cardMessage = card.querySelector('.quote-message');
+
+          if (newStatus === 'accepted' &&
+              !confirm('Accept this quotation?')) return;
+
+          if (newStatus === 'rejected' &&
+              !confirm('Reject this quotation?')) return;
+
+          const buttons = card.querySelectorAll('button');
+          buttons.forEach(b => b.disabled = true);
+          cardMessage.textContent = 'Updating quotation…';
+
+          try {
+            const { error } = await sb.rpc('update_quotation_status', {
+              p_quotation_id: quotationId,
+              p_status: newStatus
+            });
+
+            if (error) throw error;
+
+            cardMessage.textContent =
+              'Quotation status updated to ' + newStatus + '.';
+            await loadBuyerQuotations();
+          } catch (error) {
+            console.error('Quotation status update error:', error);
+            cardMessage.textContent =
+              'Could not update status: ' + (error.message || 'Unknown error');
+            buttons.forEach(b => b.disabled = false);
+          }
+        };
+
+      } catch (error) {
+        console.error('Buyer quotations error:', error);
+        message.textContent =
+          'Could not load quotations: ' + (error.message || 'Unknown error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadBuyerQuotations);
+  </script>
+</body>
+</html>
