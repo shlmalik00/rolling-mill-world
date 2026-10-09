@@ -1,4 +1,3 @@
-
 async function getRfQClientAndUser() {
   if (typeof getSupabaseClient !== 'function') {
     throw new Error('Authentication system is not available.');
@@ -116,9 +115,11 @@ async function submitRfq(e) {
      * Only save supplier_id after confirming that this column
      * exists in your rfqs table. See note below.
      */
-    if (supplier.id) {
-      payload.supplier_id = supplier.id;
-    }
+  
+if (supplier.id) {
+  payload.supplier_id = supplier.id;
+  payload.company_id = supplier.id;
+}
 
     const { data, error } = await sb
       .from('rfqs')
