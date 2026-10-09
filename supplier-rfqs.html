@@ -115,7 +115,46 @@ console.log('Expected supplier owner ID:',
               ${rfq.created_at
                 ? escapeHtml(new Date(rfq.created_at).toLocaleDateString())
                 : 'Not available'}</p>
-            <p><small>Reference: ${escapeHtml(rfq.id)}</small></p>
+          
+<p><strong>Reference:</strong> ${escapeHtml(rfq.id)}</p>
+
+<form class="quotation-form" data-rfq-id="${escapeHtml(rfq.id)}"
+  style="margin-top:16px;padding-top:16px;border-top:1px solid #ddd;">
+
+  <h4>Submit Quotation</h4>
+
+  <label>Price *</label>
+  <input name="price" type="number" min="0" step="0.01"
+    required placeholder="Enter your total price">
+
+  <label>Currency *</label>
+  <select name="currency" required>
+    <option value="">Select currency</option>
+    <option value="USD">USD</option>
+    <option value="EUR">EUR</option>
+    <option value="INR">INR</option>
+    <option value="AED">AED</option>
+  </select>
+
+  <label>Delivery time</label>
+  <input name="delivery_time" type="text"
+    placeholder="e.g. 8–10 weeks">
+
+  <label>Payment terms</label>
+  <input name="payment_terms" type="text"
+    placeholder="e.g. 30% advance, 70% before shipment">
+
+  <label>Warranty</label>
+  <input name="warranty" type="text"
+    placeholder="e.g. 12 months">
+
+  <label>Notes</label>
+  <textarea name="notes" rows="3"
+    placeholder="Additional quotation details"></textarea>
+
+  <button type="submit">Submit Quotation</button>
+  <p class="quotation-message" aria-live="polite"></p>
+</form>
           </article>
         `).join('');
 
