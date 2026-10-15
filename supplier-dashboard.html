@@ -1,406 +1,1029 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Supplier Dashboard | Rolling Mill World</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta
+    name="description"
+    content="Manage assigned RFQs and submit quotations on Rolling Mill World."
+  />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --primary: #174a8b;
+      --primary-dark: #103767;
+      --background: #f4f7fb;
+      --surface: #ffffff;
+      --text: #172033;
+      --muted: #68758a;
+      --border: #dfe6ef;
+      --success: #18794e;
+      --success-bg: #eaf7ef;
+      --danger: #b42318;
+      --danger-bg: #fff0ef;
+      --warning-bg: #fff7e5;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.55;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      max-width: 1180px;
+      margin: auto;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      color: var(--primary);
+      font-size: 20px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 30px 22px 60px;
+    }
+
+    .page-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: clamp(26px, 4vw, 34px);
+      margin: 0 0 6px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 0 0 16px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin: 0 0 8px;
+      overflow-wrap: anywhere;
+    }
+
+    p { margin-top: 0; }
+
+    .muted { color: var(--muted); }
+
+    .panel, .rfq-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(18, 39, 70, 0.035);
+    }
+
+    .panel {
+      padding: 22px;
+      margin-bottom: 22px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .summary-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .summary-number {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .rfq-list {
+      display: grid;
+      gap: 18px;
+    }
+
+    .rfq-card {
+      padding: 22px;
+      min-width: 0;
+    }
+
+    .rfq-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      background: #edf3fc;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 10px;
+      white-space: nowrap;
+    }
+
+    .badge-success {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .rfq-description {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #344054;
+      margin: 12px 0 16px;
+    }
+
+    .rfq-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .quote-form {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field-full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font: inherit;
+      color: var(--text);
+      background: white;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid #b6d2fa;
+      border-color: var(--primary);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    button, .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 11px 16px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button:hover, .button:hover { background: var(--primary-dark); }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
+    .button-secondary {
+      background: #eef2f7;
+      color: #243247;
+    }
+
+    .button-secondary:hover { background: #e1e8f0; }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .notice {
+      border-radius: 9px;
+      padding: 13px 15px;
+      margin: 14px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .notice-info { background: #edf4ff; color: #174a8b; }
+    .notice-success { background: var(--success-bg); color: var(--success); }
+    .notice-error { background: var(--danger-bg); color: var(--danger); }
+    .notice-warning { background: var(--warning-bg); color: #805b00; }
+
+    .hidden { display: none !important; }
+
+    .empty-state {
+      border: 1px dashed #cbd5e1;
+      border-radius: var(--radius);
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255,255,255,0.7);
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 6px;
+      font-size: 17px;
+    }
+
+    .loading {
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    footer {
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 700px) {
+      .header-inner { padding: 15px; }
+      main { padding: 22px 14px 42px; }
+      .summary-grid { grid-template-columns: 1fr; gap: 10px; }
+      .summary-card { padding: 15px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field-full { grid-column: auto; }
+      .rfq-card, .panel { padding: 17px; }
+      .rfq-top { flex-direction: column; }
+    }
+  </style>
 </head>
 
 <body>
-
-<header>
-  <div class="nav wrap">
-    <a class="brand" href="index.html">
-      <b>RMW</b> Rolling Mill <em>World</em>
-    </a>
-
-    <nav>
-      <a href="directory.html">Suppliers</a>
-      <a href="index.html#categories">Categories</a>
-      <a href="supplier-dashboard.html">Supplier Dashboard</a>
-    </nav>
-
-    <a class="btn dark" href="index.html">Home</a>
-  </div>
-</header>
-
-<main class="section wrap">
-
-  <label>SUPPLIER DASHBOARD</label>
-  <h1>Incoming Buyer RFQs</h1>
-
-  <p>
-    Review requests sent to your company and submit your quotation.
-  </p>
-
-  <div id="supplierMsg" role="status" aria-live="polite"></div>
-
-  <div id="rfqList">
-    <p>Starting dashboard…</p>
-  </div>
-
-</main>
-
-<footer>
-  <div class="wrap">
-    <small>© 2026 Rolling Mill World</small>
-  </div>
-</footer>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js"></script>
-<script src="auth.js"></script>
-
-<script>
-let supplierCompanyId = null;
-
-document.addEventListener('DOMContentLoaded', loadSupplierDashboard);
-
-async function loadSupplierDashboard() {
-  const msg = document.getElementById('supplierMsg');
-  const list = document.getElementById('rfqList');
-
-  try {
-    list.innerHTML = '<p>Connecting to Supabase…</p>';
-
-    if (typeof getSupabaseClient !== 'function') {
-      throw new Error('Authentication system is not available.');
-    }
-
-    const sb = await getSupabaseClient();
-
-    const {
-      data: sessionData,
-      error: sessionError
-    } = await sb.auth.getSession();
-
-    if (sessionError) {
-      throw new Error('Session error: ' + sessionError.message);
-    }
-
-    if (!sessionData.session?.user) {
-      msg.innerHTML = `
-        <p>You need to sign in to access your supplier dashboard.</p>
-        <button class="btn blue" type="button" onclick="signInToDashboard()">
-          Supplier Login
+  <header>
+    <div class="header-inner">
+      <a class="brand" href="index.html">Rolling Mill World</a>
+      <div class="header-actions">
+        <a class="button button-secondary" href="index.html">Home</a>
+        <button id="refreshBtn" type="button" class="button-secondary">
+          Refresh RFQs
         </button>
-      `;
+        <button id="signOutBtn" type="button" class="hidden">
+          Sign out
+        </button>
+      </div>
+    </div>
+  </header>
 
-      list.innerHTML = '';
-      return;
-    }
+  <main>
+    <section class="page-heading">
+      <div>
+        <h1>Supplier Dashboard</h1>
+        <p class="muted">Review assigned requests for quotation and submit your offers.</p>
+      </div>
+    </section>
 
-    const user = sessionData.session.user;
+    <div id="globalMessage" class="notice hidden" role="status" aria-live="polite"></div>
 
-    list.innerHTML = '<p>Loading your supplier company…</p>';
+    <section id="loginPanel" class="panel hidden">
+      <h2>Sign in required</h2>
+      <p class="muted">
+        Sign in with your supplier account to view assigned RFQs and submit quotations.
+      </p>
+      <a class="button" href="index.html">Go to sign in</a>
+    </section>
 
-    const {
-      data: company,
-      error: companyError
-    } = await sb
-      .from('companies')
-      .select('id')
-      .eq('owner_id', user.id)
-      .limit(1)
-      .maybeSingle();
+    <section id="dashboardContent" class="hidden">
+      <section class="panel">
+        <h2>Supplier account</h2>
+        <div id="supplierInfo" class="muted">Loading supplier details…</div>
+      </section>
 
-    if (companyError) {
-      throw new Error(
-        'Could not load your supplier company: ' + companyError.message
-      );
-    }
+      <section class="summary-grid" aria-label="Dashboard summary">
+        <div class="summary-card">
+          <div class="summary-label">Assigned open RFQs</div>
+          <div id="openRfqCount" class="summary-number">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Quotations submitted</div>
+          <div id="submittedQuoteCount" class="summary-number">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">RFQs awaiting your quotation</div>
+          <div id="pendingRfqCount" class="summary-number">—</div>
+        </div>
+      </section>
 
-    if (!company) {
-      msg.textContent =
-        'No supplier company profile was found for this account. Please register or check your supplier account.';
-      list.innerHTML = '';
-      return;
-    }
+      <section>
+        <div class="page-heading">
+          <div>
+            <h2>Open RFQs</h2>
+            <p class="muted">Only RFQs assigned to your supplier company should appear here.</p>
+          </div>
+        </div>
+        <div id="rfqList" class="rfq-list">
+          <div class="loading">Loading RFQs…</div>
+        </div>
+      </section>
+    </section>
+  </main>
 
-    supplierCompanyId = company.id;
+  <footer>
+    Rolling Mill World · Supplier Portal
+  </footer>
 
-    msg.textContent = '';
-    list.innerHTML = '<p>Loading RFQs addressed to your company…</p>';
+  <script>
+    (() => {
+      "use strict";
 
-    const {
-      data: rfqs,
-      error: rfqError
-    } = await sb
-      .from('rfqs')
-      .select(
-        'id, title, description, status, delivery_country, created_at'
-      )
-      .eq('supplier_id', supplierCompanyId)
-      .eq('status', 'open')
-      .order('created_at', { ascending: false });
+      let supabaseClient = null;
+      let currentUser = null;
+      let supplierCompany = null;
+      let currentRfqs = [];
+      let submittedRfqIds = new Set();
+      let isLoading = false;
 
-    if (rfqError) {
-      throw new Error(
-        'Could not load incoming RFQs: ' + rfqError.message
-      );
-    }
+      const $ = (id) => document.getElementById(id);
 
-    if (!rfqs || rfqs.length === 0) {
-      list.innerHTML = `
-        <article class="card" style="margin-top:20px;padding:24px;">
-          <h2>No incoming RFQs yet</h2>
-          <p>
-            When a buyer sends an RFQ to your company, it will appear here.
-          </p>
-        </article>
-      `;
-      return;
-    }
+      function showMessage(message, type = "info") {
+        const el = $("globalMessage");
+        el.textContent = message;
+        el.className = "notice notice-" + type;
+        el.classList.remove("hidden");
+      }
 
-    list.innerHTML = rfqs.map(function (rfq) {
-      const date = rfq.created_at
-        ? new Date(rfq.created_at).toLocaleDateString()
-        : 'Not available';
+      function clearMessage() {
+        $("globalMessage").textContent = "";
+        $("globalMessage").className = "notice hidden";
+      }
 
-      const id = escapeHtml(rfq.id);
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        })[character]);
+      }
 
-      return `
-        <article class="card" style="margin-top:20px;padding:24px;">
-          <small>RFQ REFERENCE</small>
+      function formatDate(value) {
+        if (!value) return "Not provided";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "Not provided";
+        return date.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric"
+        });
+      }
 
-          <h2>${escapeHtml(rfq.title || 'Buyer RFQ')}</h2>
+      function isMissingColumn(error) {
+        if (!error) return false;
 
-          <p>${escapeHtml(
-            rfq.description || 'No description provided.'
-          )}</p>
+        const code = String(error.code || "");
+        const message = String(error.message || "");
 
-          ${
-            rfq.delivery_country
-              ? `<p><strong>Delivery country:</strong>
-                  ${escapeHtml(rfq.delivery_country)}</p>`
-              : ''
+        return (
+          code === "42703" ||
+          code === "PGRST204" ||
+          code === "PGRST200" ||
+          /column .* does not exist/i.test(message) ||
+          /could not find .* column/i.test(message) ||
+          /schema cache/i.test(message)
+        );
+      }
+
+      function isNoRowsError(error) {
+        return !!error && error.code === "PGRST116";
+      }
+
+      async function readSupabaseConfig() {
+        const response = await fetch("/api/config", {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load application configuration. Please try again later.");
+        }
+
+        const config = await response.json();
+
+        const url =
+          config.supabaseUrl ||
+          config.SUPABASE_URL ||
+          config.url;
+
+        const key =
+          config.supabaseAnonKey ||
+          config.supabase_anon_key ||
+          config.SUPABASE_ANON_KEY ||
+          config.anonKey ||
+          config.anon_key;
+
+        if (!url || !key) {
+          throw new Error(
+            "Supabase URL or public anon key is missing from /api/config."
+          );
+        }
+
+        return { url, key };
+      }
+
+      async function initialise() {
+        try {
+          if (!window.supabase || !window.supabase.createClient) {
+            throw new Error("Supabase client library failed to load.");
           }
 
-          <p><strong>Status:</strong> ${escapeHtml(rfq.status)}</p>
-          <p><strong>Submitted:</strong> ${escapeHtml(date)}</p>
+          const config = await readSupabaseConfig();
 
-          <p>
-            <small>Reference: ${id}</small>
-          </p>
+          supabaseClient = window.supabase.createClient(config.url, config.key, {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true
+            }
+          });
 
-          <button
-            class="btn blue"
-            type="button"
-            onclick="toggleQuotationForm('${id}')"
-          >
-            View RFQ / Submit quotation
-          </button>
+          const { data, error } = await supabaseClient.auth.getSession();
 
-          <div
-            id="quotationForm-${id}"
-            style="display:none;margin-top:24px;"
-          >
-            <hr>
-            <h3>Submit your quotation</h3>
+          if (error) throw error;
 
-            <form onsubmit="submitQuotation(event, '${id}')">
+          if (!data.session || !data.session.user) {
+            showLogin();
+            return;
+          }
 
-              <label for="price-${id}">Price</label>
-              <input
-                id="price-${id}"
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                placeholder="Price"
-              >
+          currentUser = data.session.user;
+          $("signOutBtn").classList.remove("hidden");
+          await loadDashboard();
 
-              <label for="currency-${id}">Currency</label>
-              <select id="currency-${id}" required>
-                <option value="">Select currency</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="INR">INR</option>
-                <option value="GBP">GBP</option>
-                <option value="AED">AED</option>
-                <option value="CNY">CNY</option>
-              </select>
+          supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === "SIGNED_OUT" || !session) {
+              currentUser = null;
+              showLogin();
+            }
+          });
+        } catch (error) {
+          console.error("Dashboard initialisation failed:", error);
+          showMessage(
+            error.message || "Could not initialise the supplier dashboard.",
+            "error"
+          );
+          $("rfqList").innerHTML = "";
+        }
+      }
 
-              <label for="delivery-${id}">Delivery time</label>
-              <input
-                id="delivery-${id}"
-                required
-                placeholder="Delivery time (e.g. 12 weeks)"
-              >
+      function showLogin() {
+        $("loginPanel").classList.remove("hidden");
+        $("dashboardContent").classList.add("hidden");
+        $("signOutBtn").classList.add("hidden");
+      }
 
-              <label for="payment-${id}">Payment terms</label>
-              <input
-                id="payment-${id}"
-                required
-                placeholder="Payment terms"
-              >
+      async function getSupplierCompany() {
+        const { data, error } = await supabaseClient
+          .from("companies")
+          .select("id")
+          .eq("owner_id", currentUser.id)
+          .limit(1)
+          .maybeSingle();
 
-              <label for="warranty-${id}">Warranty</label>
-              <input
-                id="warranty-${id}"
-                placeholder="Warranty"
-              >
+        if (error) throw error;
 
-              <label for="notes-${id}">Additional details</label>
-              <textarea
-                id="notes-${id}"
-                rows="5"
-                placeholder="Additional notes / quotation details"
-              ></textarea>
+        if (!data) {
+          throw new Error(
+            "No supplier company is linked to this account. Complete supplier registration or contact support."
+          );
+        }
 
-              <button
-                class="btn blue"
-                type="submit"
-                id="submitQuotation-${id}"
-              >
-                Submit quotation
-              </button>
+        return data;
+      }
 
-              <p id="quotationMsg-${id}" role="status" aria-live="polite"></p>
-            </form>
-          </div>
-        </article>
-      `;
-    }).join('');
+      async function getRfqsForColumn(columnName, companyId) {
+        const { data, error } = await supabaseClient
+          .from("rfqs")
+          .select("id,title,description,status,delivery_country,created_at")
+          .eq(columnName, companyId)
+          .eq("status", "open")
+          .order("created_at", { ascending: false });
 
-  } catch (err) {
-    console.error('Supplier dashboard error:', err);
+        if (error) {
+          if (isMissingColumn(error)) return { rows: [], missingColumn: true };
+          throw error;
+        }
 
-    msg.textContent = err.message || 'An unexpected error occurred.';
-    list.innerHTML = '<p>The dashboard could not load the RFQs.</p>';
-  }
-}
+        return { rows: data || [], missingColumn: false };
+      }
 
-function signInToDashboard() {
-  if (typeof openAuth === 'function') {
-    openAuth('login');
-  } else {
-    window.location.href = 'index.html';
-  }
-}
+      async function getSupplierRfqs(companyId) {
+        const columns = ["supplier_id", "company_id"];
+        const combined = new Map();
+        const failures = [];
 
-function toggleQuotationForm(rfqId) {
-  const form = document.getElementById('quotationForm-' + rfqId);
+        for (const column of columns) {
+          try {
+            const result = await getRfqsForColumn(column, companyId);
+            for (const rfq of result.rows) {
+              combined.set(String(rfq.id), rfq);
+            }
+          } catch (error) {
+            failures.push(error);
+          }
+        }
 
-  if (!form) return;
+        if (combined.size > 0) {
+          return Array.from(combined.values()).sort((a, b) => {
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+          });
+        }
 
-  form.style.display =
-    form.style.display === 'none' ? 'block' : 'none';
-}
+        if (failures.length === columns.length) {
+          throw failures[0];
+        }
 
-async function submitQuotation(event, rfqId) {
-  event.preventDefault();
+        return [];
+      }
 
-  const button = document.getElementById('submitQuotation-' + rfqId);
-  const msg = document.getElementById('quotationMsg-' + rfqId);
+      async function getSubmittedQuotes(companyId, rfqs) {
+        if (!rfqs.length) return [];
 
-  if (msg) msg.textContent = 'Submitting quotation…';
-  if (button) button.disabled = true;
+        // Fetch quotations belonging to this supplier company, then match RFQs
+        // in the browser. This avoids assuming an optional relationship exists.
+        const { data, error } = await supabaseClient
+          .from("quotations")
+          .select("id,rfq_id,supplier_company_id,status,created_at")
+          .eq("supplier_company_id", companyId);
 
-  try {
-    const sb = await getSupabaseClient();
+        if (error) throw error;
 
-    const {
-      data: sessionData,
-      error: sessionError
-    } = await sb.auth.getSession();
+        const rfqIds = new Set(rfqs.map((rfq) => String(rfq.id)));
 
-    if (sessionError) throw sessionError;
+        return (data || []).filter((quote) =>
+          rfqIds.has(String(quote.rfq_id))
+        );
+      }
 
-    if (!sessionData.session?.user) {
-      throw new Error('Please sign in before submitting a quotation.');
-    }
+      async function loadDashboard() {
+        if (isLoading || !currentUser) return;
 
-    const user = sessionData.session.user;
+        isLoading = true;
+        clearMessage();
+        $("dashboardContent").classList.remove("hidden");
+        $("rfqList").innerHTML = '<div class="loading">Loading your assigned RFQs…</div>';
 
-    const {
-      data: company,
-      error: companyError
-    } = await sb
-      .from('companies')
-      .select('id')
-      .eq('owner_id', user.id)
-      .limit(1)
-      .maybeSingle();
+        try {
+          supplierCompany = await getSupplierCompany();
+          $("supplierInfo").textContent =
+            "Supplier company ID: " + supplierCompany.id;
 
-    if (companyError) throw companyError;
+          currentRfqs = await getSupplierRfqs(supplierCompany.id);
 
-    if (!company) {
-      throw new Error('Supplier company profile not found.');
-    }
+          // Load all supplier quotations so the dashboard can correctly count
+          // quotations even when there are no currently open RFQs.
+          const { data: allQuotes, error: quoteError } = await supabaseClient
+            .from("quotations")
+            .select("id,rfq_id,supplier_company_id,status,created_at")
+            .eq("supplier_company_id", supplierCompany.id);
 
-    // Confirm that this RFQ is assigned to this supplier.
-    const {
-      data: rfq,
-      error: rfqError
-    } = await sb
-      .from('rfqs')
-      .select('id')
-      .eq('id', rfqId)
-      .eq('supplier_id', company.id)
-      .eq('status', 'open')
-      .maybeSingle();
+          if (quoteError) throw quoteError;
 
-    if (rfqError) throw rfqError;
+          const quotes = allQuotes || [];
+          submittedRfqIds = new Set(
+            quotes.map((quote) => String(quote.rfq_id))
+          );
 
-    if (!rfq) {
-      throw new Error(
-        'This RFQ is not assigned to your company or is no longer open.'
-      );
-    }
+          $("openRfqCount").textContent = String(currentRfqs.length);
+          $("submittedQuoteCount").textContent = String(quotes.length);
+          $("pendingRfqCount").textContent = String(
+            currentRfqs.filter(
+              (rfq) => !submittedRfqIds.has(String(rfq.id))
+            ).length
+          );
 
-    const price = document.getElementById('price-' + rfqId).value;
-    const currency = document.getElementById('currency-' + rfqId).value;
-    const deliveryTime = document.getElementById('delivery-' + rfqId).value.trim();
-    const paymentTerms = document.getElementById('payment-' + rfqId).value.trim();
-    const warranty = document.getElementById('warranty-' + rfqId).value.trim();
-    const notes = document.getElementById('notes-' + rfqId).value.trim();
+          renderRfqs();
+        } catch (error) {
+          console.error("Failed to load supplier dashboard:", error);
+          showMessage(
+            error.message ||
+              "Unable to load your dashboard. Please refresh and try again.",
+            "error"
+          );
+          $("rfqList").innerHTML = `
+            <div class="empty-state">
+              <strong>Could not load RFQs</strong>
+              Please check your connection and account permissions, then refresh.
+            </div>`;
+        } finally {
+          isLoading = false;
+        }
+      }
 
-    const { error } = await sb
-      .from('quotations')
-      .insert({
-        rfq_id: rfqId,
-        supplier_company_id: company.id,
-        price: Number(price),
-        currency: currency,
-        delivery_time: deliveryTime,
-        payment_terms: paymentTerms,
-        warranty: warranty,
-        notes: notes,
-        status: 'submitted'
+      function renderRfqs() {
+        const container = $("rfqList");
+
+        if (!currentRfqs.length) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <strong>No open RFQs assigned to you</strong>
+              New requests will appear here when a buyer or administrator assigns them to your company.
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = currentRfqs.map((rfq) => {
+          const alreadySubmitted = submittedRfqIds.has(String(rfq.id));
+          const safeId = escapeHtml(rfq.id);
+
+          return `
+            <article class="rfq-card">
+              <div class="rfq-top">
+                <div>
+                  <h3>${escapeHtml(rfq.title || "Untitled RFQ")}</h3>
+                  <div class="rfq-meta">
+                    <span>Created: ${escapeHtml(formatDate(rfq.created_at))}</span>
+                    <span>Delivery country: ${escapeHtml(rfq.delivery_country || "Not specified")}</span>
+                    <span>RFQ ID: ${safeId}</span>
+                  </div>
+                </div>
+                <span class="badge ${alreadySubmitted ? "badge-success" : ""}">
+                  ${alreadySubmitted ? "Quotation submitted" : "Open"}
+                </span>
+              </div>
+
+              <div class="rfq-description">${escapeHtml(
+                rfq.description || "No additional description provided."
+              )}</div>
+
+              ${
+                alreadySubmitted
+                  ? `<div class="notice notice-success">
+                       You have already submitted a quotation for this RFQ.
+                     </div>`
+                  : renderQuoteForm(safeId)
+              }
+              <div id="rfq-message-${safeId}" class="notice hidden" role="status" aria-live="polite"></div>
+            </article>`;
+        }).join("");
+
+        container.querySelectorAll(".quote-form").forEach((form) => {
+          form.addEventListener("submit", handleQuoteSubmit);
+        });
+      }
+
+      function renderQuoteForm(rfqId) {
+        return `
+          <form class="quote-form" data-rfq-id="${rfqId}">
+            <h3>Submit quotation</h3>
+            <div class="form-grid">
+              <div class="field">
+                <label for="price-${rfqId}">Price *</label>
+                <input
+                  id="price-${rfqId}"
+                  name="price"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  placeholder="Enter your total price"
+                />
+              </div>
+
+              <div class="field">
+                <label for="currency-${rfqId}">Currency *</label>
+                <select id="currency-${rfqId}" name="currency" required>
+                  <option value="">Select currency</option>
+                  <option value="USD">USD — US Dollar</option>
+                  <option value="EUR">EUR — Euro</option>
+                  <option value="INR">INR — Indian Rupee</option>
+                  <option value="GBP">GBP — British Pound</option>
+                  <option value="AED">AED — UAE Dirham</option>
+                  <option value="CNY">CNY — Chinese Yuan</option>
+                  <option value="JPY">JPY — Japanese Yen</option>
+                  <option value="SAR">SAR — Saudi Riyal</option>
+                  <option value="TRY">TRY — Turkish Lira</option>
+                  <option value="OTHER">Other / agree with buyer</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="delivery-${rfqId}">Delivery time *</label>
+                <input
+                  id="delivery-${rfqId}"
+                  name="delivery_time"
+                  type="text"
+                  maxlength="200"
+                  required
+                  placeholder="e.g. 6–8 weeks"
+                />
+              </div>
+
+              <div class="field">
+                <label for="payment-${rfqId}">Payment terms *</label>
+                <input
+                  id="payment-${rfqId}"
+                  name="payment_terms"
+                  type="text"
+                  maxlength="300"
+                  required
+                  placeholder="e.g. 30% advance, balance before dispatch"
+                />
+              </div>
+
+              <div class="field field-full">
+                <label for="warranty-${rfqId}">Warranty</label>
+                <input
+                  id="warranty-${rfqId}"
+                  name="warranty"
+                  type="text"
+                  maxlength="300"
+                  placeholder="Warranty details (optional)"
+                />
+              </div>
+
+              <div class="field field-full">
+                <label for="notes-${rfqId}">Additional notes</label>
+                <textarea
+                  id="notes-${rfqId}"
+                  name="notes"
+                  maxlength="5000"
+                  placeholder="Add specifications, exclusions, validity period, or other relevant terms"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit">Submit quotation</button>
+              <span class="muted">Fields marked * are required.</span>
+            </div>
+          </form>`;
+      }
+
+      async function verifyRfQAssignment(rfqId, companyId) {
+        const columns = ["supplier_id", "company_id"];
+        let foundColumn = false;
+        let lastError = null;
+
+        for (const column of columns) {
+          const { data, error } = await supabaseClient
+            .from("rfqs")
+            .select("id")
+            .eq("id", rfqId)
+            .eq(column, companyId)
+            .eq("status", "open")
+            .limit(1);
+
+          if (error) {
+            if (isMissingColumn(error)) continue;
+            lastError = error;
+            continue;
+          }
+
+          foundColumn = true;
+          if (data && data.length > 0) return true;
+        }
+
+        if (!foundColumn && lastError) throw lastError;
+        return false;
+      }
+
+      async function checkExistingQuote(rfqId, companyId) {
+        const { data, error } = await supabaseClient
+          .from("quotations")
+          .select("id")
+          .eq("rfq_id", rfqId)
+          .eq("supplier_company_id", companyId)
+          .limit(1);
+
+        if (error) throw error;
+        return !!(data && data.length);
+      }
+
+      function setFormMessage(rfqId, message, type) {
+        const el = $("rfq-message-" + rfqId);
+        if (!el) return;
+
+        el.textContent = message;
+        el.className = "notice notice-" + type;
+        el.classList.remove("hidden");
+      }
+
+      async function handleQuoteSubmit(event) {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const rfqId = form.dataset.rfqId;
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        if (!currentUser || !supplierCompany) {
+          showMessage("Your session has expired. Please sign in again.", "error");
+          return;
+        }
+
+        if (!form.reportValidity()) return;
+
+        const formData = new FormData(form);
+        const price = Number(formData.get("price"));
+        const currency = String(formData.get("currency") || "").trim();
+        const deliveryTime = String(formData.get("delivery_time") || "").trim();
+        const paymentTerms = String(formData.get("payment_terms") || "").trim();
+        const warranty = String(formData.get("warranty") || "").trim();
+        const notes = String(formData.get("notes") || "").trim();
+
+        if (!Number.isFinite(price) || price <= 0) {
+          setFormMessage(rfqId, "Enter a valid price greater than zero.", "error");
+          return;
+        }
+
+        if (!currency || !deliveryTime || !paymentTerms) {
+          setFormMessage(
+            rfqId,
+            "Please complete the required quotation fields.",
+            "error"
+          );
+          return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = "Submitting…";
+        clearMessage();
+
+        try {
+          // Verify assignment before attempting to create a quotation.
+          const assigned = await verifyRfQAssignment(
+            rfqId,
+            supplierCompany.id
+          );
+
+          if (!assigned) {
+            throw new Error(
+              "This RFQ is not currently assigned to your company, or it is no longer open."
+            );
+          }
+
+          // This prevents normal repeat submissions. A database unique
+          // constraint is still required to prevent simultaneous duplicate requests.
+          const existing = await checkExistingQuote(
+            rfqId,
+            supplierCompany.id
+          );
+
+          if (existing) {
+            submittedRfqIds.add(String(rfqId));
+            renderRfqs();
+            await loadDashboard();
+            showMessage("A quotation already exists for this RFQ.", "info");
+            return;
+          }
+
+          const payload = {
+            rfq_id: rfqId,
+            supplier_company_id: supplierCompany.id,
+            price,
+            currency,
+            delivery_time: deliveryTime,
+            payment_terms: paymentTerms,
+            warranty: warranty || null,
+            notes: notes || null,
+            status: "submitted"
+          };
+
+          const { error } = await supabaseClient
+            .from("quotations")
+            .insert(payload);
+
+          if (error) throw error;
+
+          submittedRfqIds.add(String(rfqId));
+          showMessage("Your quotation was submitted successfully.", "success");
+
+          await loadDashboard();
+        } catch (error) {
+          console.error("Quotation submission failed:", error);
+
+          let message = error.message ||
+            "The quotation could not be submitted. Please try again.";
+
+          if (
+            error.code === "23505" ||
+            /duplicate key|unique constraint/i.test(message)
+          ) {
+            message = "A quotation for this RFQ has already been submitted.";
+            submittedRfqIds.add(String(rfqId));
+            await loadDashboard();
+          }
+
+          setFormMessage(rfqId, message, "error");
+          submitButton.disabled = false;
+          submitButton.textContent = "Submit quotation";
+        }
+      }
+
+      $("refreshBtn").addEventListener("click", async () => {
+        if (!currentUser) {
+          window.location.href = "index.html";
+          return;
+        }
+        await loadDashboard();
       });
 
-    if (error) throw error;
+      $("signOutBtn").addEventListener("click", async () => {
+        if (!supabaseClient) {
+          window.location.href = "index.html";
+          return;
+        }
 
-    if (msg) {
-      msg.textContent = 'Quotation submitted successfully.';
-    }
+        const button = $("signOutBtn");
+        button.disabled = true;
 
-    event.target.reset();
+        try {
+          const { error } = await supabaseClient.auth.signOut();
+          if (error) throw error;
+          window.location.href = "index.html";
+        } catch (error) {
+          console.error("Sign out failed:", error);
+          showMessage("Could not sign out. Please try again.", "error");
+          button.disabled = false;
+        }
+      });
 
-  } catch (err) {
-    console.error('Quotation submission failed:', err);
-
-    if (msg) {
-      msg.textContent = err.message || 'Could not submit quotation.';
-    }
-
-  } finally {
-    if (button) button.disabled = false;
-  }
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-</script>
-
+      initialise();
+    })();
+  </script>
 </body>
 </html>
