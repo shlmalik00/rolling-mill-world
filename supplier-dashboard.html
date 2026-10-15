@@ -484,17 +484,22 @@
 
         const config = await response.json();
 
-        const url =
-          config.supabaseUrl ||
-          config.SUPABASE_URL ||
-          config.url;
+        
+const url =
+  config.url ||
+  config.supabaseUrl ||
+  config.SUPABASE_URL;
 
-        const key =
-          config.supabaseAnonKey ||
-          config.supabase_anon_key ||
-          config.SUPABASE_ANON_KEY ||
-          config.anonKey ||
-          config.anon_key;
+const key =
+  config.key ||
+  config.anonKey ||
+  config.anon_key ||
+  config.supabaseAnonKey ||
+  config.supabase_anon_key ||
+  config.SUPABASE_ANON_KEY ||
+  config.publishableKey ||
+  config.publishable_key;
+
 
         if (!url || !key) {
           throw new Error(
